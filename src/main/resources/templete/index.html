@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="content-type" content="text/html; charset=utf-8">
+    <meta http-equlv="Content-Type" content="text/html;charset=utf-8">
+    <link rel="stylesheet" href="js/element-ui/lib/theme-chalk/index.css">
+    <script src="js/vue/dist/vue.js"></script>
+    <script src="js/element-ui/lib/index.js"></script>
+</head>
+<body>
+<div id="app">
+    <el-steps :active="active" finish-status="success">
+        <el-step title="步骤 1"></el-step>
+        <el-step title="步骤 2"></el-step>
+        <el-step title="步骤 3"></el-step>
+    </el-steps>
+    <el-button style="margin-top: 12px;" @click="next">下一步</el-button>
+</div>
+</body>
+<script>
+    new Vue({
+        el: '#app',
+        data: function() {
+            return {  active: 0}
+        },
+        methods: {
+            next() {
+                if (this.active++ > 2) this.active = 0;
+            }
+        }
+    })
+</script>
+</html>
