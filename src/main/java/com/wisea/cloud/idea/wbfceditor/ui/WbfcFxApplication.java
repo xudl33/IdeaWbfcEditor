@@ -13,7 +13,6 @@ import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import netscape.javascript.JSObject;
-import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.net.MalformedURLException;

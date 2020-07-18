@@ -1,33 +1,351 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="content-type" content="text/html; charset=utf-8">
-    <meta http-equlv="Content-Type" content="text/html;charset=utf-8">
+    <meta name="content-type" content="text/plain; charset=UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <link rel="stylesheet" href="js/element-ui/lib/theme-chalk/index.css">
     <script src="js/vue/dist/vue.js"></script>
     <script src="js/element-ui/lib/index.js"></script>
+    <style scoped>
+        .has-tools .el-form-item {
+            width: 10%;
+            display: inline-block;
+        }
+
+        .has-tools .el-form-item__label {
+            width: 30%;
+        }
+
+        .tool-group {
+            border-bottom: 1px solid #DCDFE6;
+            margin-bottom: 15px;
+        }
+
+        #app .el-form-item__error {
+            position: relative;
+        }
+    </style>
 </head>
 <body>
 <div id="app">
     <el-steps :active="active" finish-status="success">
-        <el-step title="步骤 1"></el-step>
-        <el-step title="步骤 2"></el-step>
-        <el-step title="步骤 3"></el-step>
+        <el-step title="1 - 配置包路径"></el-step>
+        <el-step title="2 - 选择生成规则"></el-step>
+        <el-step title="3 - 开始生成"></el-step>
     </el-steps>
-    <el-button style="margin-top: 12px;" @click="next">下一步</el-button>
+    <el-divider></el-divider>
+    <div v-if="active == 1">
+        <!--        :rules="formFules"-->
+        <el-form ref="form" :model="form" label-width="10%">
+            <div class="has-tools">
+                <el-form-item label-width="50%">
+                </el-form-item>
+                <el-form-item label="Controller" label-width="50%">
+                    <el-switch v-model="form.hasController"></el-switch>
+                </el-form-item>
+                <el-form-item label="Service" label-width="50%">
+                    <el-switch v-model="form.hasService"></el-switch>
+                </el-form-item>
+                <el-form-item label="PO&VO" label-width="50%">
+                    <el-switch v-model="form.hasPovo"></el-switch>
+                </el-form-item>
+            </div>
+            <div v-if="form.hasController" class="tool-group">
+                <el-form-item label="Controller 路径" prop="controllerPath">
+                    <el-input v-model="form.controllerPath"></el-input>
+                </el-form-item>
+                <el-form-item label="Controller 包名" prop="controllerPackage">
+                    <el-input v-model="form.controllerPackage"></el-input>
+                </el-form-item>
+            </div>
+            <div v-if="form.hasService" class="tool-group">
+                <el-form-item label="Service 路径" prop="servicePath">
+                    <el-input v-model="form.servicePath"></el-input>
+                </el-form-item>
+                <el-form-item label="Service 包名" prop="servicePackage">
+                    <el-input v-model="form.servicePackage"></el-input>
+                </el-form-item>
+            </div>
+            <div v-if="form.hasPovo" class="tool-group">
+                <el-form-item label="PO 路径" prop="poPath">
+                    <el-input v-model="form.poPath"></el-input>
+                </el-form-item>
+                <el-form-item label="PO 包名" prop="poPackage">
+                    <el-input v-model="form.poPackage"></el-input>
+                </el-form-item>
+                <el-form-item label="VO 路径" prop="voPath">
+                    <el-input v-model="form.voPath"></el-input>
+                </el-form-item>
+                <el-form-item label="VO 包名" prop="voPackage">
+                    <el-input v-model="form.voPackage"></el-input>
+                </el-form-item>
+                <el-form-item label="结构简化">
+                    <el-switch v-model="form.simplePoVo"></el-switch>
+                    <el-tooltip
+                            content="开启该选项后，Controller的insert和update会简化成一个saveOrUpdate函数, delete会使用固定的com.wisea.cloud.model.po.LongIdPo"
+                            placement="right" effect="light">
+                        <el-button type="text" icon="el-icon-question"></el-button>
+                    </el-tooltip>
+                </el-form-item>
+            </div>
+            <el-form-item label="Entity 路径" prop="entityPath">
+                <el-input v-model="form.entityPath"></el-input>
+            </el-form-item>
+            <el-form-item label="Entity 包名" prop="entityPackage">
+                <el-input v-model="form.entityPackage"></el-input>
+            </el-form-item>
+            <el-form-item label="DAO 路径" prop="daoPath">
+                <el-input v-model="form.daoPath"></el-input>
+            </el-form-item>
+            <el-form-item label="DAO 包名" prop="daoPackage">
+                <el-input v-model="form.daoPackage"></el-input>
+            </el-form-item>
+            <el-form-item label="XML 路径" prop="xmlPath">
+                <el-input v-model="form.xmlPath"></el-input>
+            </el-form-item>
+            <el-form-item label="XML 包名" prop="xmlPackage">
+                <el-input v-model="form.xmlPackage"></el-input>
+            </el-form-item>
+        </el-form>
+    </div>
+    <div v-if="active == 2">
+        <el-table :data="tableData" border style="width: 100%">
+            <el-table-column type="index" width="50"></el-table-column>
+            <el-table-column label="表名" prop="tableName"></el-table-column>
+            <el-table-column label="映射名" prop="entityName"></el-table-column>
+            <el-table-column label="操作">
+                <template slot-scope="scope">
+                    <el-button @click.native.prevent="openEdit(scope.$index, scope.row)" type="text" size="small">编辑
+                    </el-button>
+                    <el-button @click.native.prevent="deleteRow(scope.$index, scope.row)" type="text" size="small">删除
+                    </el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+    </div>
+    <div v-if="active == 3">
+        <span> {{status}} </span>
+    </div>
+    <el-divider></el-divider>
+    <el-row>
+        <el-col :span="4" style="margin: 0px auto;float: none;">
+            <el-button style="margin-top: 12px;" @click="callJava">调JAVA函数</el-button>
+            <el-button style="margin-top: 12px;" @click="pres">上一步</el-button>
+            <el-button style="margin-top: 12px;" @click="next">下一步</el-button>
+        </el-col>
+    </el-row>
+    <el-dialog title="编辑" :visible.sync="dialogVisible" :before-close="handleClose" :close-on-click-modal="false">
+        <el-form :model="updateForm" label-width="15%" :rules="updateFormFules" ref="updateForm">
+            <el-form-item label="表名">
+                <span> {{ updateForm.tableName }} </span>
+            </el-form-item>
+            <el-form-item label="映射名" prop="entityName">
+                <el-input v-model="updateForm.entityName" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="特殊列">
+                <div>
+                    <el-row>
+                        <el-button type="text" icon="el-icon-plus" title="新增一行" @click="addColumn"></el-button>
+                    </el-row>
+                    <el-table :data="updateForm.columns" border style="width: 100%">
+                        <el-table-column type="index" width="50"></el-table-column>
+                        <el-table-column label="列名" min-width="30%">
+                            <template slot-scope="scope">
+                                <el-form-item :prop="'columns.' + scope.$index + '.colName'"
+                                              :rules="updateFormFules.columns.colName">
+                                    <el-select v-model="scope.row.colName" placeholder="请选择">
+                                        <el-option
+                                                v-for="item in columnList"
+                                                :key="item.value"
+                                                :label="item.label"
+                                                :value="item.value">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </template>
+                        </el-table-column>
+                        <el-table-column>
+                            <template slot="header" slot-scope="scope">
+                                <span>配置属性</span>
+                                <el-tooltip placement="top" effect="light">
+                                    <div slot="content">
+                                        <span>用于替换特殊无法自动映射的列，多个使用逗号分隔 例:aa=yy;bb=nn 更具体语法属性可以参考</span> <a
+                                            href="http://mybatis.org/generator/configreference/columnOverride.html"
+                                            target="_blank">http://mybatis.org/generator/configreference/columnOverride.html</a>
+                                    </div>
+                                    <el-button type="text" icon="el-icon-question"></el-button>
+                                </el-tooltip>
+                            </template>
+                            <template slot-scope="scope">
+                                <el-form-item :prop="'columns.' + scope.$index + '.colProperties'"
+                                              :rules="updateFormFules.columns.colProperties">
+                                    <el-input v-model="scope.row.colProperties"></el-input>
+                                </el-form-item>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="操作" min-width="20%">
+                            <template slot-scope="scope">
+                                <el-button @click.native.prevent="deleteColumn(scope.$index, scope.row)" type="text"
+                                           size="small">删除
+                                </el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="handleClose">取 消</el-button>
+            <el-button type="primary" @click="confimRow">确 定</el-button>
+        </span>
+    </el-dialog>
 </div>
 </body>
 <script>
     new Vue({
         el: '#app',
-        data: function() {
-            return {  active: 0}
+        data: function () {
+            var vidFunc = (prd, msg) => {
+                return (rule, value, callback) => {
+                    if (this.form[prd] && !value) return callback(new Error(msg));
+                };
+            };
+            // var validCloumns = (rule, value, callback) => {
+            //     if(value){
+            //         let vLength = value.length;
+            //         let tLength = value.filter(n => n.colProperties).length;
+            //         if(vLength != tLength){
+            //             return callback(new Error("列名不能为空, 配置属性不能为空"));
+            //         }
+            //
+            //     }
+            // };
+            var validColName = (rule, value, callback) => {
+                if (!value) return callback(new Error("配置属性不能为空"));
+            };
+            var validColProp = (rule, value, callback) => {
+                if (!value) return callback(new Error("配置属性不能为空"));
+            };
+            return {
+                active: 1,
+                form: {},
+                formFules: {
+                    controllerPath: [{validator: vidFunc('hasController', 'Controller 路径不能为空'), trigger: 'blur'}],
+                    controllerPackage: [{validator: vidFunc('hasController', 'Controller 包名不能为空'), trigger: 'blur'}],
+                    servicePath: [{validator: vidFunc('hasService', 'Service 路径不能为空'), trigger: 'blur'}],
+                    servicePackage: [{validator: vidFunc('hasService', 'Service 包名不能为空'), trigger: 'blur'}],
+                    poPath: [{validator: vidFunc('hasPovo', 'PO 路径'), trigger: 'blur'}],
+                    poPackage: [{validator: vidFunc('hasPovo', 'PO 包名'), trigger: 'blur'}],
+                    voPath: [{validator: vidFunc('hasPovo', 'VO 路径'), trigger: 'blur'}],
+                    voPackage: [{validator: vidFunc('hasPovo', 'VO 包名'), trigger: 'blur'}],
+                    entityPath: [{required: true, message: 'Entity 路径不能为空', trigger: 'blur'}],
+                    entityPackage: [{required: true, message: 'Entity 包名不能为空', trigger: 'blur'}],
+                    daoPath: [{required: true, message: 'DAO 路径不能为空', trigger: 'blur'}],
+                    daoPackage: [{required: true, message: 'DAO 包名不能为空', trigger: 'blur'}],
+                    xmlPath: [{required: true, message: 'XML 路径不能为空', trigger: 'blur'}],
+                    xmlPackage: [{required: true, message: 'XML 包名不能为空', trigger: 'blur'}],
+                },
+                status: '',
+                tableData: [{
+                    tableName: 'abske_skass',
+                    entityName: 'aklsalksa'
+                }],
+                dialogVisible: false,
+                updateForm: {
+                    columns: [
+                        {colName: 'create_date', colProperties: 'javaType=java.time.OffsetDateTime'},
+                        {colName: 'update_date', colProperties: 'javaType=java.time.OffsetDateTime'},
+                    ]
+                },
+                updateFormFules: {
+                    entityName: [{required: true, message: '映射名不能为空', trigger: 'blur'}],
+                    columns: {
+                        colName: [{required: true, message: '列名不能为空', trigger: 'blur'}],
+                        colProperties: [{required: true, message: '配置属性不能为空', trigger: 'blur'}]
+                    }
+                },
+                dialogColumnVisible: false,
+                columnList: [
+                    {
+                        value: 'create_date',
+                        label: 'create_date'
+                    }, {
+                        value: 'update_date',
+                        label: 'update_date'
+                    }
+                ],
+            }
         },
         methods: {
             next() {
-                if (this.active++ > 2) this.active = 0;
+                if (this.active++ > 2) this.active = 3;
+                if (this.active == 2) {
+                    this.$refs['form'].validate((valid) => {
+                        if (!valid) {
+                            this.active = 1;
+                            return false;
+                        }
+                    });
+                }
+            },
+            pres() {
+                if (this.active-- < 2) this.active = 1;
+            },
+            openEdit(index, row) {
+                /*this.$set(this.updateForm, 'tableName', row.tableName);
+                this.$set(this.updateForm, 'entityName', row.entityName);*/
+                let tep = this.$options.data().updateForm;
+                this.$set(this, 'updateForm', Object.assign(tep, row));
+                this.dialogVisible = true;
+                // 查询对应的列名
+                this.getTableColumn(this.updateForm.tableName);
+            },
+            updateRow(index, row) {
+
+            },
+            deleteRow() {
+
+            },
+            handleClose() {
+                this.dialogVisible = false;
+                this.$set(this, 'updateForm', this.$options.data().updateForm);
+            },
+            addColumn() {
+                this.updateForm.columns.push({});
+            },
+            confimRow() {
+                this.$refs['updateForm'].validate((valid) => {
+                    if (valid) {
+                        let tName = this.updateForm.tableName;
+                        this.tableData.filter(n => tName == n.tableName)[0]['columns'] = this.updateForm.columns;
+                        this.handleClose();
+                    }
+                });
+            },
+            deleteColumn(index) {
+                this.updateForm.columns.splice(index, 1);
+            },
+            getTableColumn(tableName) {
+                // 是否有webengin接口
+                if (!wbfcGenerator) {
+                    alert("您的IDE不支持本插件，请使用 IntelliJ IDEA 2020.1.3 (Ultimate Edition) 或以上版本");
+                    return;
+                }
+                // 查询webengin接口对应的数据
+                let columnList = wbfcGenerator.getColumns(tableName);
+                if (columnList && columnList.length > 0) {
+                    let colObjList = columnList.map(n => {
+                        return {label: n, value: n};
+                    });
+                    this.$set(this, 'columnList', columnList);
+                }
+
+            },
+            callJava(){
+                console.log("call java {}", window.wbfcGenerator);
+                window.wbfcGenerator.getColumns('111');
             }
         }
-    })
+    });
 </script>
 </html>
