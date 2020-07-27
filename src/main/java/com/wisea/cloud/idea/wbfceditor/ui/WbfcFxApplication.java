@@ -1,27 +1,60 @@
 package com.wisea.cloud.idea.wbfceditor.ui;
 
+import com.intellij.database.psi.DbTable;
+import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.project.Project;
+import com.sun.javafx.webkit.WebConsoleListener;
 import com.wisea.cloud.idea.wbfceditor.generator.WbfcGenerator;
+import com.wisea.cloud.wbfceditor.generator.util.GeneratorUtil;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
-import javafx.embed.swing.JFXPanel;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
+
+import javafx.event.EventHandler;
 import javafx.scene.Scene;
-import javafx.scene.layout.VBox;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import netscape.javascript.JSObject;
+import org.apache.commons.compress.utils.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
+import java.util.List;
 
 public class WbfcFxApplication extends Application {
 
     public static void main(String[] args) {
         launch(args);
+    }
+
+    private static WbfcGenerator WbfcGenerator = new WbfcGenerator();
+    private static List<DbTable> tableList = Lists.newArrayList();
+    private Logger logger = LoggerFactory.getLogger(getClass());
+
+    private static AnActionEvent currentEvent = null;
+    private static Stage stage = null;
+    private static WebEngine webEngine = null;
+
+    public static Stage getStage(){
+        return stage;
+    }
+    public static void setAnActionEvent(AnActionEvent e) {
+        currentEvent = e;
+    }
+
+    public static Project getProject() {
+        if (null != currentEvent) {
+            return currentEvent.getData(PlatformDataKeys.PROJECT);
+        }
+        return null;
     }
 
     /**
@@ -48,28 +81,26 @@ public class WbfcFxApplication extends Application {
         return null;
     }
 
+    public static void setTableList(List<DbTable> tableList) {
+        WbfcFxApplication.tableList = tableList;
+    }
+
+    public static List<DbTable> getTableList() {
+        return tableList;
+    }
+
 
     @Override
     public void start(Stage primaryStage) throws MalformedURLException {
-        /*Parent root = null;
-        try {
-            root = FXMLLoader.load(getClass().getResource("/templete/WbfcFx.fxml"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        primaryStage.setTitle("JAVAFX嵌入html测试");
-        primaryStage.setScene(new Scene(root, 1270, 860));
-        primaryStage.show();*/
-        final WebView browser = new WebView();
-        WebEngine webEngine = browser.getEngine();
+        this.stage = primaryStage;
+        GeneratorUtil.setWbfcEditorGenerator(WbfcGenerator);
+        //primaryStage.setAlwaysOnTop(true);
 
-//        String content = null;
-//        try {
-//            content = getContent(new FileInputStream(new File(getClass().getResource("/templete/index.html").getFile())), "utf-8");
-//        } catch (FileNotFoundException e) {
-//            e.printStackTrace();
-//        }
-        //webEngine.loadContent(content, "text/html");
+        // the wumpus doesn't leave when the last stage is hidden.
+        Platform.setImplicitExit(false);
+
+        final WebView browser = new WebView();
+        webEngine = browser.getEngine();
 
         webEngine.setJavaScriptEnabled(true);
         webEngine.getLoadWorker().stateProperty().addListener(
@@ -78,44 +109,51 @@ public class WbfcFxApplication extends Application {
 
                     if (newState == Worker.State.SUCCEEDED) {
                         JSObject win = (JSObject) webEngine.executeScript("window");
-                        win.setMember("WbfcGenerator",
-                                new WbfcGenerator());//设置变量
+                        win.setMember("wbfcGenerator", WbfcGenerator
+                        );//设置变量
                     }
                 });
-//        String content = null;
-//        try {
-//            content = getContent(new FileInputStream(new File(getClass().getResource("/templete/index.html").getFile())), "utf-8");
-//        } catch (FileNotFoundException e) {
-//            e.printStackTrace();
-//        }
-//        webEngine.loadContent(content, "text/html;charset=UTF-8");
-//        try {
-//            webEngine.load(new File(getClass().getResource("/templete/index.html").toURI()).toURI().toURL().toString());
-//        } catch (URISyntaxException e) {
-//            e.printStackTrace();
-//        }
-        webEngine.load("http://203.86.72.233:8088/wisea_dev/wbf-cloud/blob/master/wbf-cloud-common/src/main/resources/templates/emailFile/emailOverage.ftl");
-        /*Button button1 = new Button("java调JS方法");
-        button1.setOnAction(event -> {
-            try {
 
-                JSObject win = (JSObject) webEngine.executeScript("window");
-                //webEngine.executeScript("show()");//执行js函数
-                //win.call("show","a","b");
-                win.eval("show('a','b')");
-            } catch (Exception e) {
-                e.printStackTrace();
+        try {
+            // webEngine.load(new File(getClass().getResource("/templete/index.html").toURI()).toURI().toURL().toString());
+            webEngine.load(getClass().getResource("/templates/index.html").toExternalForm());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        // 注册控制台日志监听器
+        WebConsoleListener.setDefaultListener(new WebConsoleListener() {
+            @Override
+            public void messageAdded(WebView webView, String message, int lineNumber, String sourceId) {
+                logger.debug("WebView Console.log: {} 【{} - {}】", message, sourceId, lineNumber);
             }
-        });*/
-        VBox stackPane = new VBox();
-        stackPane.setSpacing(20);
-//        stackPane.getChildren().addAll(button1,browser);
-        stackPane.getChildren().addAll(browser);
-        Scene scene = new Scene(stackPane, 600, 400);
+        });
 
-        scene.setRoot(stackPane);
+
+        primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+            @Override
+            public void handle(WindowEvent event) {
+                hide();
+            }
+        });
+
+        Scene scene = new Scene(browser, 1300, 800);
+        primaryStage.setTitle("WbfcEditor - Java codes generator");
         primaryStage.setScene(scene);
         primaryStage.show();
 
+    }
+
+    public static void hide(){
+        if(null != stage) {
+            stage.hide();
+        }
+    }
+
+    public static void reload(){
+        if(null != webEngine){
+            webEngine.reload();
+        }
     }
 }

@@ -1,20 +1,28 @@
 package com.wisea.cloud.idea.wbfceditor;
 
 import com.intellij.database.psi.DbTable;
-import com.intellij.openapi.actionSystem.*;
-import com.intellij.openapi.project.Project;
+import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.LangDataKeys;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiFile;
 import com.wisea.cloud.idea.wbfceditor.constants.Constants;
 import com.wisea.cloud.idea.wbfceditor.ui.WbfcFxApplication;
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.stage.Stage;
+import org.apache.commons.compress.utils.Lists;
+
+import java.net.MalformedURLException;
+import java.util.List;
 
 
 public class WbfcEditorAction extends AnAction {
 
+
     @Override
     public void actionPerformed(AnActionEvent e) {
+
 //    // 获取工程上下文
 //        Project project = e.getData(PlatformDataKeys.PROJECT);
 //// 获取当前类文件
@@ -32,15 +40,39 @@ public class WbfcEditorAction extends AnAction {
             return;
         }
 
+        List<DbTable> tableList = Lists.newArrayList();
         for (PsiElement psiElement : psiElements) {
             if (!(psiElement instanceof DbTable)) {
                 Messages.showMessageDialog("所选择的必须是【表】类型", Constants.TITLE_NOTICE,  Messages.getInformationIcon());
                 return;
+            } else {
+                tableList.add((DbTable)psiElement);
             }
         }
+
         boolean isSingleTable = psiElements.length == 1;
         //new MainUI(e, isSingleTable);
-        Application.launch(WbfcFxApplication.class);
+        WbfcFxApplication.setAnActionEvent(e);
+        WbfcFxApplication.setTableList(tableList);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Stage stage = WbfcFxApplication.getStage();
+                if(null == stage){
+                    Application.launch(WbfcFxApplication.class);
+                } else {
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            stage.show();
+                            WbfcFxApplication.reload();
+                        }
+                    });
+
+                }
+            }
+        }).start();
+
     }
 
 

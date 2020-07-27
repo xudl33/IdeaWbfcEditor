@@ -27,7 +27,10 @@
     </style>
 </head>
 <body>
-<div id="app">
+<div id="app" v-loading="loading"
+     element-loading-text="正在加载中"
+     element-loading-spinner="el-icon-loading"
+     element-loading-background="rgba(0, 0, 0, 0.8)">
     <el-steps :active="active" finish-status="success">
         <el-step title="1 - 配置包路径"></el-step>
         <el-step title="2 - 选择生成规则"></el-step>
@@ -35,22 +38,21 @@
     </el-steps>
     <el-divider></el-divider>
     <div v-if="active == 1">
-        <!--        :rules="formFules"-->
-        <el-form ref="form" :model="form" label-width="10%">
+        <el-form ref="form" :model="form" label-width="10%" :rules="formFules">
             <div class="has-tools">
                 <el-form-item label-width="50%">
                 </el-form-item>
                 <el-form-item label="Controller" label-width="50%">
-                    <el-switch v-model="form.hasController"></el-switch>
+                    <el-switch v-model="form.hasController" active-value="true" inactive-value="false"></el-switch>
                 </el-form-item>
                 <el-form-item label="Service" label-width="50%">
-                    <el-switch v-model="form.hasService"></el-switch>
+                    <el-switch v-model="form.hasService" active-value="true" inactive-value="false"></el-switch>
                 </el-form-item>
                 <el-form-item label="PO&VO" label-width="50%">
-                    <el-switch v-model="form.hasPovo"></el-switch>
+                    <el-switch v-model="form.hasPoVo" active-value="true" inactive-value="false"></el-switch>
                 </el-form-item>
             </div>
-            <div v-if="form.hasController" class="tool-group">
+            <div v-if="'true' == form.hasController" class="tool-group">
                 <el-form-item label="Controller 路径" prop="controllerPath">
                     <el-input v-model="form.controllerPath"></el-input>
                 </el-form-item>
@@ -58,7 +60,7 @@
                     <el-input v-model="form.controllerPackage"></el-input>
                 </el-form-item>
             </div>
-            <div v-if="form.hasService" class="tool-group">
+            <div v-if="'true' == form.hasService" class="tool-group">
                 <el-form-item label="Service 路径" prop="servicePath">
                     <el-input v-model="form.servicePath"></el-input>
                 </el-form-item>
@@ -66,7 +68,7 @@
                     <el-input v-model="form.servicePackage"></el-input>
                 </el-form-item>
             </div>
-            <div v-if="form.hasPovo" class="tool-group">
+            <div v-if="'true' == form.hasPoVo" class="tool-group">
                 <el-form-item label="PO 路径" prop="poPath">
                     <el-input v-model="form.poPath"></el-input>
                 </el-form-item>
@@ -80,10 +82,13 @@
                     <el-input v-model="form.voPackage"></el-input>
                 </el-form-item>
                 <el-form-item label="结构简化">
-                    <el-switch v-model="form.simplePoVo"></el-switch>
-                    <el-tooltip
-                            content="开启该选项后，Controller的insert和update会简化成一个saveOrUpdate函数, delete会使用固定的com.wisea.cloud.model.po.LongIdPo"
-                            placement="right" effect="light">
+                    <el-switch v-model="form.simplePoVo"  active-value="true" inactive-value="false"></el-switch>
+                    <el-tooltip placement="right" effect="light">
+                        <div slot="content">
+                            <span>开启该选项后，Controller的insert和update会简化成一个saveOrUpdate函数, delete会使用固定的com.wisea.cloud.model.po.LongIdPo</span>
+                            <br/>
+                            <span>这里为全局配置，也可以在下一步中对表单独进行配置</span>
+                        </div>
                         <el-button type="text" icon="el-icon-question"></el-button>
                     </el-tooltip>
                 </el-form-item>
@@ -129,9 +134,8 @@
     <el-divider></el-divider>
     <el-row>
         <el-col :span="4" style="margin: 0px auto;float: none;">
-            <el-button style="margin-top: 12px;" @click="callJava">调JAVA函数</el-button>
             <el-button style="margin-top: 12px;" @click="pres">上一步</el-button>
-            <el-button style="margin-top: 12px;" @click="next">下一步</el-button>
+            <el-button v-if="active < 3" style="margin-top: 12px;" @click="next">下一步</el-button>
         </el-col>
     </el-row>
     <el-dialog title="编辑" :visible.sync="dialogVisible" :before-close="handleClose" :close-on-click-modal="false">
@@ -155,7 +159,7 @@
                                               :rules="updateFormFules.columns.colName">
                                     <el-select v-model="scope.row.colName" placeholder="请选择">
                                         <el-option
-                                                v-for="item in columnList"
+                                                v-for="item in updateForm.columnList"
                                                 :key="item.value"
                                                 :label="item.label"
                                                 :value="item.value">
@@ -169,7 +173,7 @@
                                 <span>配置属性</span>
                                 <el-tooltip placement="top" effect="light">
                                     <div slot="content">
-                                        <span>用于替换特殊无法自动映射的列，多个使用逗号分隔 例:aa=yy;bb=nn 更具体语法属性可以参考</span> <a
+                                        <span>用于手动指定列参数，多个使用逗号分隔 例:aa=yy;bb=nn 更具体语法属性可以参考</span> <a
                                             href="http://mybatis.org/generator/configreference/columnOverride.html"
                                             target="_blank">http://mybatis.org/generator/configreference/columnOverride.html</a>
                                     </div>
@@ -207,9 +211,22 @@
         data: function () {
             var vidFunc = (prd, msg) => {
                 return (rule, value, callback) => {
+                    //console.log("check vidFunc value ="  + value);
                     if (this.form[prd] && !value) return callback(new Error(msg));
+                    callback();
                 };
             };
+            var vidPathFunc = (rule, value, callback) => {
+                //console.log("check vidPathFunc value ="  + value);
+                if (value) {
+                    let checkDir = isAbsDir(value);
+                    if (!checkDir) {
+                        return callback(new Error("必须是已存在的绝对目录"));
+                    }
+                    callback();
+                }
+            };
+
             // var validCloumns = (rule, value, callback) => {
             //     if(value){
             //         let vLength = value.length;
@@ -222,40 +239,59 @@
             // };
             var validColName = (rule, value, callback) => {
                 if (!value) return callback(new Error("配置属性不能为空"));
+                callback();
             };
             var validColProp = (rule, value, callback) => {
                 if (!value) return callback(new Error("配置属性不能为空"));
+                callback();
             };
             return {
+                loading: true,
                 active: 1,
                 form: {},
                 formFules: {
-                    controllerPath: [{validator: vidFunc('hasController', 'Controller 路径不能为空'), trigger: 'blur'}],
+                    controllerPath: [
+                        {validator: vidFunc('hasController', 'Controller 路径不能为空'), trigger: 'blur'},
+                        {validator: vidPathFunc, trigger: 'blur'}
+                    ],
                     controllerPackage: [{validator: vidFunc('hasController', 'Controller 包名不能为空'), trigger: 'blur'}],
-                    servicePath: [{validator: vidFunc('hasService', 'Service 路径不能为空'), trigger: 'blur'}],
+                    servicePath: [
+                        {validator: vidFunc('hasService', 'Service 路径不能为空'), trigger: 'blur'},
+                        {validator: vidPathFunc, trigger: 'blur'}
+                    ],
                     servicePackage: [{validator: vidFunc('hasService', 'Service 包名不能为空'), trigger: 'blur'}],
-                    poPath: [{validator: vidFunc('hasPovo', 'PO 路径'), trigger: 'blur'}],
+                    poPath: [
+                        {validator: vidFunc('hasPovo', 'PO 路径'), trigger: 'blur'},
+                        {validator: vidPathFunc, trigger: 'blur'}
+                    ],
                     poPackage: [{validator: vidFunc('hasPovo', 'PO 包名'), trigger: 'blur'}],
-                    voPath: [{validator: vidFunc('hasPovo', 'VO 路径'), trigger: 'blur'}],
+                    voPath: [
+                        {validator: vidFunc('hasPovo', 'VO 路径'), trigger: 'blur'},
+                        {validator: vidPathFunc, trigger: 'blur'}
+                    ],
                     voPackage: [{validator: vidFunc('hasPovo', 'VO 包名'), trigger: 'blur'}],
-                    entityPath: [{required: true, message: 'Entity 路径不能为空', trigger: 'blur'}],
+                    entityPath: [
+                        {required: true, message: 'Entity 路径不能为空', trigger: 'blur'},
+                        {validator: vidPathFunc, trigger: 'blur'}
+                    ],
                     entityPackage: [{required: true, message: 'Entity 包名不能为空', trigger: 'blur'}],
-                    daoPath: [{required: true, message: 'DAO 路径不能为空', trigger: 'blur'}],
+                    daoPath: [
+                        {required: true, message: 'DAO 路径不能为空', trigger: 'blur'},
+                        {validator: vidPathFunc, trigger: 'blur'}
+                    ],
                     daoPackage: [{required: true, message: 'DAO 包名不能为空', trigger: 'blur'}],
-                    xmlPath: [{required: true, message: 'XML 路径不能为空', trigger: 'blur'}],
+                    xmlPath: [
+                        {required: true, message: 'XML 路径不能为空', trigger: 'blur'},
+                        {validator: vidPathFunc, trigger: 'blur'}
+                    ],
                     xmlPackage: [{required: true, message: 'XML 包名不能为空', trigger: 'blur'}],
                 },
                 status: '',
-                tableData: [{
-                    tableName: 'abske_skass',
-                    entityName: 'aklsalksa'
-                }],
+                tableData: [],
                 dialogVisible: false,
                 updateForm: {
-                    columns: [
-                        {colName: 'create_date', colProperties: 'javaType=java.time.OffsetDateTime'},
-                        {colName: 'update_date', colProperties: 'javaType=java.time.OffsetDateTime'},
-                    ]
+                    columnList: [],
+                    columns: []
                 },
                 updateFormFules: {
                     entityName: [{required: true, message: '映射名不能为空', trigger: 'blur'}],
@@ -265,26 +301,42 @@
                     }
                 },
                 dialogColumnVisible: false,
-                columnList: [
-                    {
-                        value: 'create_date',
-                        label: 'create_date'
-                    }, {
-                        value: 'update_date',
-                        label: 'update_date'
-                    }
-                ],
+
             }
         },
         methods: {
             next() {
-                if (this.active++ > 2) this.active = 3;
-                if (this.active == 2) {
+                //console.log("active = " + this.active);
+                if (this.active <= 1) {
+                    //console.log("validate from");
                     this.$refs['form'].validate((valid) => {
+                        //console.log("validate valid=" + valid);
                         if (!valid) {
                             this.active = 1;
                             return false;
+                        } else {
+                            if (this.active++ > 2) this.active = 3;
                         }
+                    });
+                } else {
+                    if (this.active++ > 2) this.active = 3;
+                }
+                if (this.active >= 3) {
+                    this.$confirm('您确认要按照该配置生成代码(目录会被覆盖生成)?', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        this.generate();
+                    }).catch((e) => {
+                        if ('cancel' == e) {
+                            this.active = 2;
+                            return;
+                        }
+                        this.$message({
+                            type: 'info',
+                            message: '生成失败，请参考控制台日志'
+                        });
                     });
                 }
             },
@@ -296,14 +348,27 @@
                 this.$set(this.updateForm, 'entityName', row.entityName);*/
                 let tep = this.$options.data().updateForm;
                 this.$set(this, 'updateForm', Object.assign(tep, row));
-                this.dialogVisible = true;
                 // 查询对应的列名
                 this.getTableColumn(this.updateForm.tableName);
-            },
-            updateRow(index, row) {
+                this.dialogVisible = true;
 
             },
-            deleteRow() {
+            deleteRow(index, row) {
+                let _this = this;
+                this.$confirm('是否删除?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    _this.tableData.splice(index, 1);
+                }).catch((e) => {
+                    if ('cancel' == e) return;
+                    console.log("delete table is error = " + e);
+                    this.$message({
+                        type: 'info',
+                        message: '删除失败，请参考控制台日志'
+                    });
+                });
 
             },
             handleClose() {
@@ -326,26 +391,245 @@
                 this.updateForm.columns.splice(index, 1);
             },
             getTableColumn(tableName) {
-                // 是否有webengin接口
-                if (!wbfcGenerator) {
-                    alert("您的IDE不支持本插件，请使用 IntelliJ IDEA 2020.1.3 (Ultimate Edition) 或以上版本");
-                    return;
-                }
-                // 查询webengin接口对应的数据
-                let columnList = wbfcGenerator.getColumns(tableName);
-                if (columnList && columnList.length > 0) {
-                    let colObjList = columnList.map(n => {
-                        return {label: n, value: n};
-                    });
-                    this.$set(this, 'columnList', columnList);
+                // 获取默认的特殊列
+                this.getDefaultDateColumn(tableName);
+                // 如果下拉列表已经查询过了 就不用重复查了
+                if (this.updateForm.columnList.length <= 0) {
+                    // 查询webengin接口对应的数据
+                    let columnList = getColumnsOptions(tableName);
+                    //console.log("columnList = "+ columnList);
+                    if (columnList && columnList.length > 0) {
+                        this.$set(this.updateForm, 'columnList', columnList.map(n => {
+                            return {'label': n, 'value': n};
+                        }));
+                        //console.log("updateForm.columnList = " + this.updateForm.columnList);
+                    }
                 }
 
             },
-            callJava(){
-                console.log("call java {}", window.wbfcGenerator);
-                window.wbfcGenerator.getColumns('111');
+            getDefaultDateColumn(tableName) {
+                // 如果是编辑的情况就不设置默认了
+                if (this.updateForm.columns.length <= 0) {
+                    let dateColums = getDefaultColumnList(tableName);
+                    // 需要添加date映射
+                    if (dateColums.length > 0) {
+                        this.$set(this.updateForm, 'columns', dateColums);
+                    }
+                }
+
+            },
+            getTables() {
+                let tempTable = getTables();
+                this.$set(this, 'tableData', tempTable);
+            },
+            getConfig() {
+                let temp = getConfig();
+                this.$set(this, 'form', temp);
+            },
+            loadContext() {
+                let maxTimeout = 10;
+                let tempIndex = 0;
+                let _this = this;
+                // 因为application里是页面加载完成后添加的Java成员 如果不延迟的话 可能会出现加载不到的问题
+                let intv = null;
+                intv = setInterval(() => {
+                    //console.log("tempIndex = " + tempIndex);
+                    if (tempIndex >= 5) {
+                        _this.loading = false;
+                        _this.$message.error({
+                            message: "您的IDE不支持本插件，请使用 IntelliJ IDEA 2020.1.3 (Ultimate Edition) 或以上版本",
+                            duration: 0
+                        });
+                        if (intv) clearInterval(intv);
+                        return;
+                    }
+                    let checkRes = checkGenerrator();
+                    if (checkRes) {
+                        if (intv) clearInterval(intv);
+                        _this.loading = false;
+                        _this.checkDbConnect();
+                        _this.getConfig();
+                        _this.getTables();
+                    }
+                    tempIndex++;
+                }, 1000);
+            },
+            generate() {
+                console.log("tabledata = " + JSON.stringify(this.tableData));
+                let wbfcConfig = Object.assign({}, this.form);
+                wbfcConfig.tablesCloumnList = Object.assign(this.tableData);
+                console.log("tabledata = " + JSON.stringify(wbfcConfig));
+                saveWbfcConfig(wbfcConfig);
+
+                let genRes = generateCodes();
+                if ("success" == genRes) {
+                    this.$alert('生成成功', '-提示-', {
+                        confirmButtonText: '确定',
+                        callback: action => {
+                            closeApplication();
+                        }
+                    });
+                    return;
+                } else {
+                    this.$alert('生成失败,请到控制台查看错误日志', '-提示-', {
+                        confirmButtonText: '确定',
+                        callback: action => {
+                            closeApplication();
+                        }
+                    });
+                    return;
+                }
+            },
+            checkDbConnect() {
+                let res = checkDbConnection();
+                if ('success' != res) {
+                    this.$alert(res, '-提示-', {
+                        confirmButtonText: '确定',
+                        callback: action => {
+                            closeApplication();
+                        }
+                    });
+                    return;
+                }
             }
+        },
+
+        created: function () {
+            this.loadContext();
         }
     });
+
+    /**
+     * 校验时候有java成员变量
+     *
+     * @returns {boolean}
+     */
+    function checkGenerrator() {
+        try {
+            if (wbfcGenerator) {
+                return true;
+            }
+        } catch (e) {
+            // do nothing
+        }
+        return false;
+    }
+
+    function getTables() {
+        if (!checkGenerrator()) {
+            return [];
+        }
+        let tempTable = wbfcGenerator.getTables();
+        return JSON.parse(tempTable);
+    }
+
+    /**
+     * 获取table对应的列下拉框值
+     *
+     * @param tableName
+     * @returns {string|any}
+     */
+    function getColumnsOptions(tableName) {
+        if (!checkGenerrator()) {
+            return [];
+        }
+        let tempCol = wbfcGenerator.getTableColumnOptions(tableName);
+        if (tempCol && '' != tempCol) {
+            return JSON.parse(tempCol);
+        }
+        return [];
+    }
+
+    /**
+     * 获取table对应的列属性
+     *
+     * @param tableName
+     * @returns {string|any}
+     */
+    function getDefaultColumnList(tableName) {
+        if (!checkGenerrator()) {
+            return [];
+        }
+        let tempCol = wbfcGenerator.getDefaultColumnList(tableName);
+        if (tempCol && '' != tempCol) {
+            return JSON.parse(tempCol);
+        }
+        return [];
+    }
+
+    /**
+     * 判断是否为绝对路径
+     *
+     * @param path
+     * @returns {string|any}
+     */
+    function isAbsDir(path) {
+        if (!checkGenerrator()) {
+            return false;
+        }
+        return wbfcGenerator.isAbsDirectory(path);
+    }
+
+    /**
+     * 获取配置
+     *
+     * @returns {string|any}
+     */
+    function getConfig() {
+        if (!checkGenerrator()) {
+            return {};
+        }
+        let tempCol = wbfcGenerator.getProjectConfig();
+        if (tempCol && '' != tempCol) {
+            return JSON.parse(tempCol);
+        }
+        return {};
+    }
+
+    /**
+     * 生成代码
+     *
+     * @returns {string|*}
+     */
+    function generateCodes() {
+        if (!checkGenerrator()) {
+            return '';
+        }
+        let tempCol = wbfcGenerator.generateCodes();
+        return tempCol;
+    }
+
+    /**
+     * 保存配置信息
+     *
+     * @returns {string|*}
+     */
+    function saveWbfcConfig(wbfcConfig) {
+        if (!checkGenerrator()) {
+            return '';
+        }
+        wbfcGenerator.saveWbfcConfig(JSON.stringify(wbfcConfig));
+    }
+
+    /**
+     * 关闭
+     *
+     */
+    function closeApplication() {
+        if (!checkGenerrator()) {
+            return;
+        }
+        wbfcGenerator.close();
+    }
+
+    /**
+     * 检查数据库链接
+     */
+    function checkDbConnection() {
+        if (!checkGenerrator()) {
+            return;
+        }
+        return wbfcGenerator.checkDbConnection();
+    }
 </script>
 </html>
