@@ -3,9 +3,12 @@ package com.wisea.cloud.wbfceditor.generator.util;
 import com.wisea.cloud.common.util.ConverterUtil;
 import com.wisea.cloud.wbfceditor.generator.WbfcEditorGenerator;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcConfig;
+import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataTable;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDbInfo;
 import org.mybatis.generator.api.IntrospectedTable;
 import org.mybatis.generator.api.dom.java.JavaElement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Date;
@@ -15,6 +18,8 @@ public class GeneratorUtil {
     private static WbfcConfig wbfcConfig = new WbfcConfig();
 
     private static WbfcEditorGenerator wbfcEditorGenerator = null;
+
+    private static Logger logger = LoggerFactory.getLogger(GeneratorUtil.class);
 
     /**
      * 添加JavaDoc
@@ -76,6 +81,7 @@ public class GeneratorUtil {
 
     public static void setWbfcEditorGenerator(WbfcEditorGenerator wbg){
         wbfcEditorGenerator = wbg;
+        logger.debug("test logger");
     }
     public static WbfcEditorGenerator getWbfcEditorGenerator(){
         return wbfcEditorGenerator;
@@ -97,4 +103,12 @@ public class GeneratorUtil {
         }
     }
 
+    public static boolean getSimplePoVo(String tableName){
+        WbfcConfig config = getWbfcConfig();
+        WbfcDataTable dataTable = config.getDataTable(tableName);
+        if(null != dataTable){
+            return ConverterUtil.toBoolean(dataTable.getSimplePoVo());
+        }
+        return false;
+    }
 }

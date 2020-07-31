@@ -25,6 +25,7 @@ import java.io.File;
 import java.text.MessageFormat;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 public class WbfcEditorRunner {
@@ -91,7 +92,15 @@ public class WbfcEditorRunner {
             // 生成各种代码文件
             List<String> warnings = Lists.newArrayList();
             boolean overwrite = true;
-            ConfigurationParser cp = new ConfigurationParser(warnings);
+            Properties extraProperties = new Properties();
+            extraProperties.setProperty("log4j.rootLogger", "INFO, ConsoleLogger");
+            extraProperties.setProperty("log4j.appender.ConsoleLogger", "org.apache.log4j.ConsoleAppender");
+            extraProperties.setProperty("log4j.appender.ConsoleLogger.layout", "org.apache.log4j.PatternLayout");
+            extraProperties.setProperty("log4j.appender.ConsoleLogger.ConversionPattern", "%-4r %-5p %c - %m%n");
+            extraProperties.setProperty("log4j.logger.org.mybatis.generator", "DEBUG");
+
+            ConfigurationParser cp = new ConfigurationParser(extraProperties, warnings);
+
             Configuration config = cp.parseConfiguration(newGenerator);
             DefaultShellCallback callback = new DefaultShellCallback(overwrite);
 

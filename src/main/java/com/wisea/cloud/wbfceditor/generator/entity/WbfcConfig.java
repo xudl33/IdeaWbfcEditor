@@ -11,6 +11,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class WbfcConfig {
+
+    private String logProperties;
+
     @Check(test = "required", requiredMsg = "数据库驱动jar包路径不能为空")
     private String classPathEntry;
 
@@ -87,6 +90,14 @@ public class WbfcConfig {
 
     @Check(test = "required")
     private String simplePoVo = "false";
+
+    public String getLogProperties() {
+        return logProperties;
+    }
+
+    public void setLogProperties(String logProperties) {
+        this.logProperties = logProperties;
+    }
 
     public String getClassPathEntry() {
         return classPathEntry;
@@ -315,5 +326,22 @@ public class WbfcConfig {
         }
         res = tab.get().getColumns().stream().collect(Collectors.toMap(WbfcDataColumn::getColName, c -> c));
         return res;
+    }
+
+    public void setTotalPath(String totalPath){
+        if (ConverterUtil.isNotEmpty(totalPath)){
+            if(ConverterUtil.toBoolean(this.hasController)){
+                this.setControllerPath(totalPath);
+            }
+            if(ConverterUtil.toBoolean(this.hasService)){
+                this.setServicePath(totalPath);
+            }
+            if(ConverterUtil.toBoolean(this.hasPoVo)){
+                this.setPoPath(totalPath);
+                this.setVoPath(totalPath);
+            }
+            this.setEntityPath(totalPath);
+            this.setDaoPath(totalPath);
+        }
     }
 }

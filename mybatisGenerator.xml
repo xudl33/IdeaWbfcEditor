@@ -4,23 +4,23 @@
         "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
 
 <generatorConfiguration>
-    <#if logProperties?? >
+    
     <!-- 引入配置文件 -->
-    <properties url="${logProperties}"/>
-    </#if>
+    <properties url="file:///D:/worksIdeaProjects/WbfcEditor/build/resources/main/config/log4j.properties"/>
+    
 
     <!-- 指定数据连接驱动jar地址 这里由于使用了maven仓库，不需要指定jar包了 -->
-    <classPathEntry location="${classPathEntry}" />
+    <classPathEntry location="D:/worksIdeaProjects/WbfcEditor/build/idea-sandbox/config/jdbc-drivers/MySQL ConnectorJ/8.0.21/mysql-connector-java-8.0.21.jar" />
 
     <!-- 一个数据库一个context -->
     <context id="MySqlTables" targetRuntime="MyBatis3">
         <!-- Wbfc生成插件 -->
         <plugin type="com.wisea.cloud.wbfceditor.generator.WbfcModelGenerator">
-            <property name="hasPoVo" value="${hasPoVo}"/>
-            <property name="hasService" value="${hasService}"/>
-            <property name="hasController" value="${hasController}"/>
+            <property name="hasPoVo" value="true"/>
+            <property name="hasService" value="true"/>
+            <property name="hasController" value="true"/>
             <!-- 精简Po和Vo -->
-            <property name="simplePoVo" value="${simplePoVo}"/>
+            <property name="simplePoVo" value="false"/>
         </plugin>
 
         <!-- 注释 -->
@@ -32,9 +32,9 @@
         </commentGenerator>
 
         <!--配置数据库链接 -->
-        <jdbcConnection driverClass="${dbDriver}"
-                        connectionURL="${dbUrl}"
-                        userId="${dbUser}" password="${dbPassword}">
+        <jdbcConnection driverClass="com.mysql.cj.jdbc.Driver"
+                        connectionURL="jdbc:mysql://192.168.1.150:3306/qdcytest2"
+                        userId="dbuser" password="dbuser123@">
             <property name="useUnicode" value="true"></property>
             <property name="nullCatalogMeansCurrent" value="true"></property>
             <property name="characterEncoding" value="UTF-8"></property>
@@ -48,8 +48,8 @@
         </javaTypeResolver>
 
         <!-- 生成实体类地址 -->
-        <javaModelGenerator targetPackage="${entityPackage}"
-                            targetProject="${entityPath}">
+        <javaModelGenerator targetPackage="com.wisea.qdcy.standards.entity"
+                            targetProject="D:\worksIdeaProjects\TestPlugin\src\main\java">
             <!-- 是否在当前路径下新加一层schema,eg：fase路径com.oop.eksp.user.model， true:com.oop.eksp.user.model.[schemaName] -->
             <property name="enableSubPackages" value="true"/>
             <!-- 是否针对string类型的字段在set的时候进行trim调用 -->
@@ -57,22 +57,22 @@
         </javaModelGenerator>
 
         <!-- 生成mapxml文件 -->
-        <sqlMapGenerator targetPackage="${xmlPackage}"
-                         targetProject="${xmlPath}">
+        <sqlMapGenerator targetPackage="mappings"
+                         targetProject="D:\worksIdeaProjects\TestPlugin\src\main\resources">
             <!-- 是否在当前路径下新加一层schema,eg：fase路径com.oop.eksp.user.model， true:com.oop.eksp.user.model.[schemaName] -->
             <property name="enableSubPackages" value="true"/>
         </sqlMapGenerator>
 
         <!-- 生成mapxml对应client，也就是接口dao type="XMLMAPPER" -->
         <javaClientGenerator type="com.wisea.cloud.wbfceditor.generator.WbfcMapperGenerator"
-                             targetPackage="${daoPackage}"
-                             targetProject="${daoPath}">
+                             targetPackage="com.wisea.qdcy.standards.mapper"
+                             targetProject="D:\worksIdeaProjects\TestPlugin\src\main\java">
             <!-- 是否在当前路径下新加一层schema,eg：fase路径com.oop.eksp.user.model， true:com.oop.eksp.user.model.[schemaName] -->
             <property name="enableSubPackages" value="true"/>
             <!-- 是否有Po和Vo -->
-            <property name="hasPoVo" value="${hasPoVo}"/>
+            <property name="hasPoVo" value="true"/>
             <!-- 精简Po和Vo -->
-            <property name="simplePoVo" value="${simplePoVo}"/>
+            <property name="simplePoVo" value="false"/>
         </javaClientGenerator>
 
         <!-- 配置表信息 -->
@@ -85,8 +85,9 @@
             <columnOverride column="update_date"
                             javaType="java.time.OffsetDateTime"/>
         </table> -->
-        <#list tablesList as tbl>
-        ${tbl}
-        </#list>
+        
+        <table tableName="standard_type_mage" domainObjectName="StandardTypeMage" enableCountByExample="false" enableSelectByExample="false" enableUpdateByExample="false" enableDeleteByExample="false"></table>
+
+        
     </context>
 </generatorConfiguration>

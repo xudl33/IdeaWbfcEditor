@@ -14,10 +14,17 @@ import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataTable;
 import com.wisea.cloud.idea.wbfceditor.ui.WbfcFxApplication;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcConfig;
 
+import org.mybatis.generator.logging.Log;
+import org.mybatis.generator.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.util.List;
 
 public class TestGreneator {
+    private Log logger = LogFactory.getLog(getClass());
+//    private Logger logger  = LoggerFactory.getLogger(getClass());
     public String getProjectConfig() {
         WbfcConfig conf = new WbfcConfig();
 
@@ -42,6 +49,8 @@ public class TestGreneator {
 
         conf.setXmlPath(new File("").getAbsolutePath() + File.separator + "src" + File.separator + "main" + File.separator + "resources");
         conf.setXmlPackage("mappings");
+        logger.debug("logger: getProjectConfig is end");
+        System.out.println("sysout: getProjectConfig is end");
         return new Gson().toJson(conf);
     }
 
@@ -58,6 +67,8 @@ public class TestGreneator {
         res.add("name");
         res.add("create_date");
         res.add("update_date");
+        logger.debug("logger: getTableColumnOptions is end");
+        System.out.println("sysout: getTableColumnOptions is end");
         return new Gson().toJson(res);
     }
 

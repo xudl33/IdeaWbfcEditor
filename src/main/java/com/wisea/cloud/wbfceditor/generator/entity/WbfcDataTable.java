@@ -21,6 +21,9 @@ public class WbfcDataTable {
     @Check(test="required")
     private String batchUpdate = "false";
 
+    @Check(test="required")
+    private String batchDelete = "false";
+
     @Check(test = "logic", cascade = true, nullSkip = true)
     private List<WbfcDataColumn> columns = Lists.newArrayList();
 
@@ -76,5 +79,13 @@ public class WbfcDataTable {
 
     public void setBatchUpdate(String batchUpdate) {
         this.batchUpdate = batchUpdate;
+    }
+
+    public String getBatchDelete() {
+        return batchDelete;
+    }
+
+    public void setBatchDelete(String batchDelete) {
+        this.batchDelete = batchDelete;
     }
 }

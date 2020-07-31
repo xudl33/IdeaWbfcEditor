@@ -7,6 +7,18 @@
     <script src="js/vue/dist/vue.js"></script>
     <script src="js/element-ui/lib/index.js"></script>
     <style scoped>
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #app {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+        }
+
         .has-tools .el-form-item {
             width: 10%;
             display: inline-block;
@@ -24,6 +36,23 @@
         #app .el-form-item__error {
             position: relative;
         }
+
+        .pop-tools .el-form-item {
+            display: inline-block;
+            width: 30%;
+        }
+
+        .quick-tools .quick-input {
+            width: 90%;
+        }
+
+        .quick-tools .quick-tooltip {
+            width: 10%;
+        }
+
+        .content {
+            padding: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -31,113 +60,145 @@
      element-loading-text="正在加载中"
      element-loading-spinner="el-icon-loading"
      element-loading-background="rgba(0, 0, 0, 0.8)">
-    <el-steps :active="active" finish-status="success">
-        <el-step title="1 - 配置包路径"></el-step>
-        <el-step title="2 - 选择生成规则"></el-step>
-        <el-step title="3 - 开始生成"></el-step>
-    </el-steps>
-    <el-divider></el-divider>
-    <div v-if="active == 1">
-        <el-form ref="form" :model="form" label-width="10%" :rules="formFules">
-            <div class="has-tools">
-                <el-form-item label-width="50%">
-                </el-form-item>
-                <el-form-item label="Controller" label-width="50%">
-                    <el-switch v-model="form.hasController" active-value="true" inactive-value="false"></el-switch>
-                </el-form-item>
-                <el-form-item label="Service" label-width="50%">
-                    <el-switch v-model="form.hasService" active-value="true" inactive-value="false"></el-switch>
-                </el-form-item>
-                <el-form-item label="PO&VO" label-width="50%">
-                    <el-switch v-model="form.hasPoVo" active-value="true" inactive-value="false"></el-switch>
-                </el-form-item>
-            </div>
-            <div v-if="'true' == form.hasController" class="tool-group">
-                <el-form-item label="Controller 路径" prop="controllerPath">
-                    <el-input v-model="form.controllerPath"></el-input>
-                </el-form-item>
-                <el-form-item label="Controller 包名" prop="controllerPackage">
-                    <el-input v-model="form.controllerPackage"></el-input>
-                </el-form-item>
-            </div>
-            <div v-if="'true' == form.hasService" class="tool-group">
-                <el-form-item label="Service 路径" prop="servicePath">
-                    <el-input v-model="form.servicePath"></el-input>
-                </el-form-item>
-                <el-form-item label="Service 包名" prop="servicePackage">
-                    <el-input v-model="form.servicePackage"></el-input>
-                </el-form-item>
-            </div>
-            <div v-if="'true' == form.hasPoVo" class="tool-group">
-                <el-form-item label="PO 路径" prop="poPath">
-                    <el-input v-model="form.poPath"></el-input>
-                </el-form-item>
-                <el-form-item label="PO 包名" prop="poPackage">
-                    <el-input v-model="form.poPackage"></el-input>
-                </el-form-item>
-                <el-form-item label="VO 路径" prop="voPath">
-                    <el-input v-model="form.voPath"></el-input>
-                </el-form-item>
-                <el-form-item label="VO 包名" prop="voPackage">
-                    <el-input v-model="form.voPackage"></el-input>
-                </el-form-item>
-                <el-form-item label="结构简化">
-                    <el-switch v-model="form.simplePoVo"  active-value="true" inactive-value="false"></el-switch>
-                    <el-tooltip placement="right" effect="light">
-                        <div slot="content">
-                            <span>开启该选项后，Controller的insert和update会简化成一个saveOrUpdate函数, delete会使用固定的com.wisea.cloud.model.po.LongIdPo</span>
-                            <br/>
-                            <span>这里为全局配置，也可以在下一步中对表单独进行配置</span>
+    <div class="content">
+        <el-steps :active="active" finish-status="success">
+            <el-step title="1 - 配置包路径"></el-step>
+            <el-step title="2 - 选择生成规则"></el-step>
+            <el-step title="3 - 开始生成"></el-step>
+        </el-steps>
+        <el-divider></el-divider>
+        <div v-if="active == 1">
+            <el-form ref="form" :model="form" label-width="10%" :rules="formFules">
+                <div class="has-tools">
+                    <el-form-item label-width="50%">
+                    </el-form-item>
+                    <el-form-item label="Controller" label-width="50%">
+                        <el-switch v-model="form.hasController" active-value="true" inactive-value="false"></el-switch>
+                    </el-form-item>
+                    <el-form-item label="Service" label-width="50%">
+                        <el-switch v-model="form.hasService" active-value="true" inactive-value="false"></el-switch>
+                    </el-form-item>
+                    <el-form-item label="PO&VO" label-width="50%">
+                        <el-switch v-model="form.hasPoVo" active-value="true" inactive-value="false"></el-switch>
+                    </el-form-item>
+                </div>
+                <div>
+                    <el-form-item prop="quickPathSet">
+                        <div slot="label">
+                            <span>快捷路径</span>
+                            <el-tooltip placement="bottom" effect="light">
+                                <div slot="content">
+                                    <span>自动设置下面各个路径</span>
+                                </div>
+                                <el-button type="text" icon="el-icon-question"></el-button>
+                            </el-tooltip>
                         </div>
-                        <el-button type="text" icon="el-icon-question"></el-button>
-                    </el-tooltip>
+                        <el-input v-model="form.quickPathSet"></el-input>
+                    </el-form-item>
+                </div>
+                <div>
+                    <el-form-item prop="quickPackageSet">
+                        <div slot="label">
+                            <span>快捷包名</span>
+                            <el-tooltip placement="bottom" effect="light">
+                                <div slot="content">
+                                    <span>自动填写下面的各个包名</span>
+                                </div>
+                                <el-button type="text" icon="el-icon-question" class="quick-tooltip"></el-button>
+                            </el-tooltip>
+                        </div>
+                        <el-input v-model="form.quickPackageSet" class="quick-input"></el-input>
+                    </el-form-item>
+                </div>
+                <div v-if="'true' == form.hasController" class="tool-group">
+                    <el-form-item label="Controller 路径" prop="controllerPath">
+                        <el-input v-model="form.controllerPath"></el-input>
+                    </el-form-item>
+                    <el-form-item label="Controller 包名" prop="controllerPackage">
+                        <el-input v-model="form.controllerPackage"></el-input>
+                    </el-form-item>
+                </div>
+                <div v-if="'true' == form.hasService" class="tool-group">
+                    <el-form-item label="Service 路径" prop="servicePath">
+                        <el-input v-model="form.servicePath"></el-input>
+                    </el-form-item>
+                    <el-form-item label="Service 包名" prop="servicePackage">
+                        <el-input v-model="form.servicePackage"></el-input>
+                    </el-form-item>
+                </div>
+                <div v-if="'true' == form.hasPoVo" class="tool-group">
+                    <el-form-item label="PO 路径" prop="poPath">
+                        <el-input v-model="form.poPath"></el-input>
+                    </el-form-item>
+                    <el-form-item label="PO 包名" prop="poPackage">
+                        <el-input v-model="form.poPackage"></el-input>
+                    </el-form-item>
+                    <el-form-item label="VO 路径" prop="voPath">
+                        <el-input v-model="form.voPath"></el-input>
+                    </el-form-item>
+                    <el-form-item label="VO 包名" prop="voPackage">
+                        <el-input v-model="form.voPackage"></el-input>
+                    </el-form-item>
+                    <el-form-item label="结构简化">
+                        <el-switch v-model="form.simplePoVo" active-value="true" inactive-value="false"></el-switch>
+                        <el-tooltip placement="right" effect="light">
+                            <div slot="content">
+                                <span>开启该选项后，Controller的insert和update会简化成一个saveOrUpdate函数, delete会使用固定的com.wisea.cloud.model.po.LongIdPo</span>
+                                <br/>
+                                <span>这里为全局配置，也可以在下一步中对表单独进行配置,精简模式下无法生成【批量新增】和【批量修改】</span>
+                            </div>
+                            <el-button type="text" icon="el-icon-question"></el-button>
+                        </el-tooltip>
+                    </el-form-item>
+                </div>
+                <el-form-item label="Entity 路径" prop="entityPath">
+                    <el-input v-model="form.entityPath"></el-input>
                 </el-form-item>
-            </div>
-            <el-form-item label="Entity 路径" prop="entityPath">
-                <el-input v-model="form.entityPath"></el-input>
-            </el-form-item>
-            <el-form-item label="Entity 包名" prop="entityPackage">
-                <el-input v-model="form.entityPackage"></el-input>
-            </el-form-item>
-            <el-form-item label="DAO 路径" prop="daoPath">
-                <el-input v-model="form.daoPath"></el-input>
-            </el-form-item>
-            <el-form-item label="DAO 包名" prop="daoPackage">
-                <el-input v-model="form.daoPackage"></el-input>
-            </el-form-item>
-            <el-form-item label="XML 路径" prop="xmlPath">
-                <el-input v-model="form.xmlPath"></el-input>
-            </el-form-item>
-            <el-form-item label="XML 包名" prop="xmlPackage">
-                <el-input v-model="form.xmlPackage"></el-input>
-            </el-form-item>
-        </el-form>
+                <el-form-item label="Entity 包名" prop="entityPackage">
+                    <el-input v-model="form.entityPackage"></el-input>
+                </el-form-item>
+                <el-form-item label="DAO 路径" prop="daoPath">
+                    <el-input v-model="form.daoPath"></el-input>
+                </el-form-item>
+                <el-form-item label="DAO 包名" prop="daoPackage">
+                    <el-input v-model="form.daoPackage"></el-input>
+                </el-form-item>
+                <el-form-item label="XML 路径" prop="xmlPath">
+                    <el-input v-model="form.xmlPath"></el-input>
+                </el-form-item>
+                <el-form-item label="XML 包名" prop="xmlPackage">
+                    <el-input v-model="form.xmlPackage" placeholder="mappings"></el-input>
+                </el-form-item>
+            </el-form>
+        </div>
+        <div v-if="active == 2">
+            <el-table :data="tableData" border style="width: 100%">
+                <el-table-column type="index" width="50"></el-table-column>
+                <el-table-column label="表名" prop="tableName"></el-table-column>
+                <el-table-column label="映射名" prop="entityName"></el-table-column>
+                <el-table-column label="操作">
+                    <template slot-scope="scope">
+                        <el-button @click.native.prevent="openEdit(scope.$index, scope.row)" type="text" size="small">编辑
+                        </el-button>
+                        <el-button @click.native.prevent="deleteRow(scope.$index, scope.row)" type="text" size="small">
+                            删除
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <span> {{status}} </span>
+        </div>
+        <div v-if="active == 3">
+
+        </div>
+        <el-divider></el-divider>
+        <el-row>
+            <el-col :span="4" style="margin: 0px auto;float: none;">
+                <el-button style="margin-top: 12px;" @click="pres">上一步</el-button>
+                <el-button v-if="active < 3" style="margin-top: 12px;" @click="next">下一步</el-button>
+            </el-col>
+        </el-row>
     </div>
-    <div v-if="active == 2">
-        <el-table :data="tableData" border style="width: 100%">
-            <el-table-column type="index" width="50"></el-table-column>
-            <el-table-column label="表名" prop="tableName"></el-table-column>
-            <el-table-column label="映射名" prop="entityName"></el-table-column>
-            <el-table-column label="操作">
-                <template slot-scope="scope">
-                    <el-button @click.native.prevent="openEdit(scope.$index, scope.row)" type="text" size="small">编辑
-                    </el-button>
-                    <el-button @click.native.prevent="deleteRow(scope.$index, scope.row)" type="text" size="small">删除
-                    </el-button>
-                </template>
-            </el-table-column>
-        </el-table>
-    </div>
-    <div v-if="active == 3">
-        <span> {{status}} </span>
-    </div>
-    <el-divider></el-divider>
-    <el-row>
-        <el-col :span="4" style="margin: 0px auto;float: none;">
-            <el-button style="margin-top: 12px;" @click="pres">上一步</el-button>
-            <el-button v-if="active < 3" style="margin-top: 12px;" @click="next">下一步</el-button>
-        </el-col>
-    </el-row>
     <el-dialog title="编辑" :visible.sync="dialogVisible" :before-close="handleClose" :close-on-click-modal="false">
         <el-form :model="updateForm" label-width="15%" :rules="updateFormFules" ref="updateForm">
             <el-form-item label="表名">
@@ -146,6 +207,34 @@
             <el-form-item label="映射名" prop="entityName">
                 <el-input v-model="updateForm.entityName" autocomplete="off"></el-input>
             </el-form-item>
+            <el-form-item label="结构简化" v-if="form.simplePoVo == 'false'">
+                <el-switch v-model="updateForm.simplePoVo" active-value="true" inactive-value="false"></el-switch>
+                <el-tooltip placement="bottom" effect="light">
+                    <div slot="content">
+                        <span>开启该选项后，Controller的insert和update会简化成一个saveOrUpdate函数, delete会使用固定的com.wisea.cloud.model.po.LongIdPo</span>
+                        <br/>
+                        <span>精简模式下无法生成【批量新增】和【批量修改】</span>
+                    </div>
+                    <el-button type="text" icon="el-icon-question"></el-button>
+                </el-tooltip>
+            </el-form-item>
+            <div class="pop-tools">
+                <el-form-item label="批量新增" prop="batchInsert" v-if="notSimplePoVo" label-width="50%">
+                    <el-switch v-model="updateForm.batchInsert" active-value="true" inactive-value="false"></el-switch>
+                </el-form-item>
+                <el-form-item label="批量修改" prop="batchUpdate" v-if="notSimplePoVo" label-width="50%">
+                    <el-switch v-model="updateForm.batchUpdate" active-value="true" inactive-value="false"></el-switch>
+                </el-form-item>
+                <el-form-item label="批量删除" prop="batchDelete" label-width="50%">
+                    <el-switch v-model="updateForm.batchDelete" active-value="true" inactive-value="false"></el-switch>
+                    <el-tooltip placement="bottom" effect="light">
+                        <div slot="content">
+                            <span>默认的删除方法是伪批量,在Service中使用for循环进行循环操。开启该选项后，将会XML会生成batchDelete函数,Service中也会直接调用batchDelete</span>
+                        </div>
+                        <el-button type="text" icon="el-icon-question"></el-button>
+                    </el-tooltip>
+                </el-form-item>
+            </div>
             <el-form-item label="特殊列">
                 <div>
                     <el-row>
@@ -206,7 +295,7 @@
 </div>
 </body>
 <script>
-    new Vue({
+    var indexVue = new Vue({
         el: '#app',
         data: function () {
             var vidFunc = (prd, msg) => {
@@ -248,7 +337,9 @@
             return {
                 loading: true,
                 active: 1,
-                form: {},
+                form: {
+                    xmlPackage: 'mappings'
+                },
                 formFules: {
                     controllerPath: [
                         {validator: vidFunc('hasController', 'Controller 路径不能为空'), trigger: 'blur'},
@@ -261,15 +352,15 @@
                     ],
                     servicePackage: [{validator: vidFunc('hasService', 'Service 包名不能为空'), trigger: 'blur'}],
                     poPath: [
-                        {validator: vidFunc('hasPovo', 'PO 路径'), trigger: 'blur'},
+                        {validator: vidFunc('hasPoVo', 'PO 路径不能为空'), trigger: 'blur'},
                         {validator: vidPathFunc, trigger: 'blur'}
                     ],
-                    poPackage: [{validator: vidFunc('hasPovo', 'PO 包名'), trigger: 'blur'}],
+                    poPackage: [{validator: vidFunc('hasPoVo', 'PO 包名不能为空'), trigger: 'blur'}],
                     voPath: [
-                        {validator: vidFunc('hasPovo', 'VO 路径'), trigger: 'blur'},
+                        {validator: vidFunc('hasPoVo', 'VO 路径不能为空'), trigger: 'blur'},
                         {validator: vidPathFunc, trigger: 'blur'}
                     ],
-                    voPackage: [{validator: vidFunc('hasPovo', 'VO 包名'), trigger: 'blur'}],
+                    voPackage: [{validator: vidFunc('hasPoVo', 'VO 包名不能为空'), trigger: 'blur'}],
                     entityPath: [
                         {required: true, message: 'Entity 路径不能为空', trigger: 'blur'},
                         {validator: vidPathFunc, trigger: 'blur'}
@@ -302,6 +393,49 @@
                 },
                 dialogColumnVisible: false,
 
+            }
+        },
+        watch: {
+            'form.quickPathSet': function (val) {
+                if (val) {
+                    if (this.form.hasController) {
+                        this.form.controllerPath = val;
+                    }
+                    if (this.form.hasService) {
+                        this.form.servicePath = val;
+                    }
+                    if (this.form.hasPoVo) {
+                        this.form.poPath = val;
+                        this.form.voPath = val;
+                    }
+                    this.form.entityPath = val;
+                    this.form.daoPath = val;
+                    let subIndex = val.lastIndexOf("/");
+                    let valIndex = subIndex > 0 ? subIndex : val.lastIndexOf("\\");
+                    let tempSub = val.substring(0, valIndex) + (subIndex > 0 ? '/' : '\\' + 'resources');
+                    this.form.xmlPath = tempSub;
+                }
+            },
+            'form.quickPackageSet': function (val) {
+                if (val) {
+                    if (this.form.hasController) {
+                        this.form.controllerPackage = val + '.controller';
+                    }
+                    if (this.form.hasService) {
+                        this.form.servicePackage = val + '.service';
+                    }
+                    if (this.form.hasPoVo) {
+                        this.form.poPackage = val + '.po';
+                        this.form.voPackage = val + '.vo';
+                    }
+                    this.form.entityPackage = val + '.entity';
+                    this.form.daoPackage = val + '.mapper';
+                }
+            }
+        },
+        computed: {
+            notSimplePoVo() {
+                return !(this.form.simplePoVo == 'true' || this.updateForm.simplePoVo == 'true');
             }
         },
         methods: {
@@ -491,6 +625,9 @@
                     });
                     return;
                 }
+            },
+            appendText(text){
+                this.status += text;
             }
         },
 
@@ -630,6 +767,13 @@
             return;
         }
         return wbfcGenerator.checkDbConnection();
+    }
+
+    function appendText(text){
+        console.log("js console append:" + text);
+        if(text){
+            indexVue.appendText(text);
+        }
     }
 </script>
 </html>

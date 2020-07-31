@@ -4,6 +4,7 @@ package com.wisea.cloud.idea.wbfceditor.ui;
 import com.sun.javafx.webkit.WebConsoleListener;
 import com.wisea.cloud.idea.wbfceditor.generator.TestGreneator;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.scene.Scene;
 import javafx.scene.web.WebEngine;
@@ -12,6 +13,8 @@ import javafx.stage.Stage;
 import netscape.javascript.JSObject;
 
 import java.io.File;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.URL;
 
 
@@ -47,13 +50,46 @@ public class TestCharsetApplication extends Application {
         WebConsoleListener.setDefaultListener(new WebConsoleListener() {
             @Override
             public void messageAdded(WebView webView, String message, int lineNumber, String sourceId) {
-                System.out.println("来自webview: " + message + " 【" + sourceId + " - " + lineNumber + "】");
+                System.out.println("webview: " + message + " 【" + sourceId + " - " + lineNumber + "】");
             }
         });
 
-        Scene scene = new Scene(webView, 1300, 800);
+        Scene scene = new Scene(webView, 1600, 900);
         primaryStage.setScene(scene);
         primaryStage.show();
+
+        /*System.setOut(new PrintStream(new OutputStream() {
+            @Override
+            public void write(int b) {
+                String text = String.valueOf((char) b);
+                Platform.runLater(() -> {
+                    if (Worker.State.SUCCEEDED == webEngine.getLoadWorker().getState()) {
+                        if( text.startsWith("webview:")) return;
+                        String textRep = text;
+                        if(text.equals("\r\n")) {
+                            textRep = "\\n";
+                        }
+                        webEngine.executeScript("appendText('" + textRep +"')");
+                    }
+
+                });
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) {
+                String text = new String(b, off, len);
+                Platform. runLater(() -> {
+                    if (Worker.State.SUCCEEDED == webEngine.getLoadWorker().getState()) {
+                        if(text.startsWith("webview:")) return;
+                        String textRep = text;
+                        if(text.equals("\r\n")) {
+                            textRep = "\\n";
+                        }
+                        webEngine.executeScript("appendText('" + textRep +"')");
+                    }
+                });
+            }
+        }, true));*/
 
         // 这里加载页面
         webEngine.load(getClass().getResource("/templates/index.html").toExternalForm());

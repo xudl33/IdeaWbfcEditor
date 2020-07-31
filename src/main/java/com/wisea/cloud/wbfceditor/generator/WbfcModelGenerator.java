@@ -3,9 +3,8 @@ package com.wisea.cloud.wbfceditor.generator;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.wisea.cloud.common.util.ConverterUtil;
-import com.wisea.cloud.wbfceditor.generator.WbfcCommentGenerator;
-import com.wisea.cloud.wbfceditor.generator.WbfcEditorGenerator;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcConfig;
+import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataTable;
 import com.wisea.cloud.wbfceditor.generator.util.GeneratorUtil;
 import org.mybatis.generator.api.*;
 import org.mybatis.generator.api.dom.java.*;
@@ -43,10 +42,17 @@ public class WbfcModelGenerator extends PluginAdapter {
     private static final String ANNOTATION_CHECK = "com.wisea.cloud.model.annotation.Check";
     private static final String ANNOTATION_DATA_CHECK = "com.wisea.cloud.common.annotation.DataCheck";
     private static final String CONVERTER_UTIL = "com.wisea.cloud.common.util.ConverterUtil";
+    private static final String SIMPLE_DELETE_PO = "com.wisea.cloud.model.po.LongIdsPo";
+    private static final String GOOGLE_LIST = "com.google.common.collect.Lists";
+    private static final String UTIL_LIST = "java.util.List";
     private boolean hasPoVo = true;
     private boolean hasController = true;
     private boolean hasService = true;
-    private Map<String, CompilationUnit> createMap = Maps.newHashMap();
+    private boolean simplePoVo = false;
+    private boolean batchInsert = false;
+    private boolean batchUpdate = false;
+    private boolean batchDelete = false;
+    private Map<String, InnerClass> createMap = Maps.newHashMap();
     private Date createDate = null;
 
     public boolean isHasPoVo() {
@@ -71,6 +77,38 @@ public class WbfcModelGenerator extends PluginAdapter {
 
     public void setHasService(boolean hasService) {
         this.hasService = hasService;
+    }
+
+    public boolean isSimplePoVo() {
+        return simplePoVo;
+    }
+
+    public void setSimplePoVo(boolean simplePoVo) {
+        this.simplePoVo = simplePoVo;
+    }
+
+    public boolean isBatchInsert() {
+        return batchInsert;
+    }
+
+    public void setBatchInsert(boolean batchInsert) {
+        this.batchInsert = batchInsert;
+    }
+
+    public boolean isBatchUpdate() {
+        return batchUpdate;
+    }
+
+    public void setBatchUpdate(boolean batchUpdate) {
+        this.batchUpdate = batchUpdate;
+    }
+
+    public boolean isBatchDelete() {
+        return batchDelete;
+    }
+
+    public void setBatchDelete(boolean batchDelete) {
+        this.batchDelete = batchDelete;
     }
 
     @Override
@@ -101,6 +139,8 @@ public class WbfcModelGenerator extends PluginAdapter {
     @Override
     public List<GeneratedJavaFile> contextGenerateAdditionalJavaFiles(IntrospectedTable introspectedTable) {
         // 设置属性
+        WbfcConfig wbfcConfig = GeneratorUtil.getWbfcConfig();
+        String tableName = introspectedTable.getTableConfiguration().getTableName();
         String hasPoVal = properties.getProperty("hasPoVo");
         if (ConverterUtil.isNotEmpty(hasPoVal)) {
             this.hasPoVo = ConverterUtil.toBoolean(hasPoVal);
@@ -113,14 +153,24 @@ public class WbfcModelGenerator extends PluginAdapter {
         if (ConverterUtil.isNotEmpty(hasServiceVal)) {
             this.hasService = ConverterUtil.toBoolean(hasServiceVal);
         }
+        String hasSimplePoVo = properties.getProperty("simplePoVo");
+        if (ConverterUtil.isNotEmpty(hasSimplePoVo)) {
+            this.simplePoVo = ConverterUtil.toBoolean(hasSimplePoVo) || GeneratorUtil.getSimplePoVo(tableName);
+        }
+        WbfcDataTable datatable = wbfcConfig.getDataTable(tableName);
+        if (null != datatable) {
+            this.batchInsert = ConverterUtil.toBoolean(datatable.getBatchInsert());
+            this.batchUpdate = ConverterUtil.toBoolean(datatable.getBatchUpdate());
+            this.batchDelete = ConverterUtil.toBoolean(datatable.getBatchDelete());
+        }
         createMap.clear();
         createDate = new Date();
         Plugin plugins = context.getPlugins();
-        WbfcConfig wbfcConfig = GeneratorUtil.getWbfcConfig();
+
         List<GeneratedJavaFile> list = Lists.newArrayList();
         // list = introspectedTable.getGeneratedJavaFiles();
         // 替换entity
-        replaceEntity(introspectedTable, plugins, list);
+        genderEntity(introspectedTable, plugins, list);
         // 生成Po和Vo
         genderPoVo(plugins, wbfcConfig, introspectedTable, list);
         // 生成Service
@@ -173,7 +223,7 @@ public class WbfcModelGenerator extends PluginAdapter {
             topLevelClass.addAnnotation("@RestController");
 
             // 增加Service
-            CompilationUnit serviceCompilationUnit = createMap.get("service");
+            InnerClass serviceCompilationUnit = createMap.get("service");
             // 如果Service不存在则跳过Controller
             if (null == serviceCompilationUnit) {
                 return;
@@ -200,26 +250,99 @@ public class WbfcModelGenerator extends PluginAdapter {
                 topLevelClass.addMethod(getMethod);
             }
 
-            // insert函数
-            Method insertMethod = getControllerBaseMethod(topLevelClass, introspectedTable, serivceType, apiDoc, "insert");
-            topLevelClass.addMethod(insertMethod);
+            // 精简模式为saveOrUpdate
+            if (this.simplePoVo) {
+                // insert函数
+                Method saveOrUpdateMethod = getControllerBaseMethod(topLevelClass, introspectedTable, serivceType, apiDoc, "saveOrUpdate");
+                topLevelClass.addMethod(saveOrUpdateMethod);
 
-            // update函数
-            Method updateMethod = getControllerBaseMethod(topLevelClass, introspectedTable, serivceType, apiDoc, "update");
-            topLevelClass.addMethod(updateMethod);
+                // 精简模式不支持batchInser和batchUpdate
 
-            // batDelete函数
-            Method batDeleteMethod = getControllerBatDeteleMethod(topLevelClass, introspectedTable, serivceType, apiDoc);
-            // 没有主键的情况下 没有batdelete函数
-            if (getMethod != null) {
-                topLevelClass.addMethod(batDeleteMethod);
+                // delete函数
+                Method deleteMethod = getControllerSimpleBatDeteleMethod(topLevelClass, introspectedTable, serivceType, apiDoc);
+                // 没有主键的情况下 没有delete函数
+                if (getMethod != null) {
+                    topLevelClass.addMethod(deleteMethod);
+                }
+            } else {
+                // insert函数
+                Method insertMethod = getControllerBaseMethod(topLevelClass, introspectedTable, serivceType, apiDoc, "insert");
+                topLevelClass.addMethod(insertMethod);
+
+                // batchInsert函数
+                if (this.batchInsert) {
+                    Method batchInsertMethod = getControllerBatchBaseMethod(topLevelClass, introspectedTable, serivceType, apiDoc, "insert");
+                    if (null != batchInsertMethod) {
+                        topLevelClass.addMethod(batchInsertMethod);
+                    }
+                }
+
+                // update函数
+                Method updateMethod = getControllerBaseMethod(topLevelClass, introspectedTable, serivceType, apiDoc, "update");
+                topLevelClass.addMethod(updateMethod);
+
+                // batchUpdate函数
+                if (this.batchUpdate) {
+                    Method batchUpdateMethod = getControllerBatchBaseMethod(topLevelClass, introspectedTable, serivceType, apiDoc, "update");
+                    if (null != batchUpdateMethod) {
+                        topLevelClass.addMethod(batchUpdateMethod);
+                    }
+                }
+
+                // batDelete函数
+                Method batDeleteMethod = getControllerBatDeteleMethod(topLevelClass, introspectedTable, serivceType, apiDoc);
+                // 没有主键的情况下 没有batdelete函数
+                if (getMethod != null) {
+                    topLevelClass.addMethod(batDeleteMethod);
+                }
             }
+
 
             GeneratedJavaFile gjf = new GeneratedJavaFile(topLevelClass, wbfcConfig.getControllerPath(), context.getProperty(PropertyRegistry.CONTEXT_JAVA_FILE_ENCODING), context.getJavaFormatter());
             list.add(gjf);
             createMap.put("controller", topLevelClass);
         }
     }
+
+    /**
+     * 创建简单的批量删除po
+     *
+     * @param topLevelClass
+     * @param introspectedTable
+     * @param serivceType
+     * @param baseApiDoc
+     * @return
+     */
+    protected Method getControllerSimpleBatDeteleMethod(TopLevelClass topLevelClass, IntrospectedTable introspectedTable, FullyQualifiedJavaType serivceType, String baseApiDoc) {
+        String serviceParamName = fullyQualifiedJavaType2FieldName(serivceType);
+        Method method = new Method("batDelete");
+        method.addAnnotation("@ApiOperation(value = \"批量删除" + baseApiDoc + "\")");
+        method.addAnnotation("@RequestMapping(value = \"batDelete\", method = RequestMethod.POST)");
+        method.addAnnotation("@DataCheck");
+
+        // 设置可见性
+        method.setVisibility(JavaVisibility.PUBLIC);
+
+        topLevelClass.addImportedType(RESULT_POJO);
+
+        FullyQualifiedJavaType dpParamType = new FullyQualifiedJavaType(SIMPLE_DELETE_PO);
+        topLevelClass.addImportedType(dpParamType);
+
+        String doParamName = "po";
+        // 设置入参
+        Parameter methodParam = new Parameter(dpParamType, doParamName);
+        methodParam.addAnnotation("@RequestBody");
+        method.addParameter(methodParam);
+
+        // 设置返回值
+        FullyQualifiedJavaType returnType = new FullyQualifiedJavaType(RESULT_POJO);
+        returnType.addTypeArgument(new FullyQualifiedJavaType("java.lang.Object"));
+        method.setReturnType(returnType);
+        method.addBodyLine("return " + serviceParamName + ".batDelete(" + doParamName + ");");
+
+        return method;
+    }
+
 
     /**
      * 创建Controller的批量删除函数
@@ -246,7 +369,7 @@ public class WbfcModelGenerator extends PluginAdapter {
         if (this.hasPoVo) {
             String poName = "BatDeletePo";
 
-            CompilationUnit doParam = createMap.get(poName);
+            InnerClass doParam = createMap.get(poName);
             if (null == doParam) {
                 return null;
             }
@@ -275,6 +398,116 @@ public class WbfcModelGenerator extends PluginAdapter {
     }
 
     /**
+     * 创建Controller的基础函数(saveOrUpdate)
+     *
+     * @param topLevelClass
+     * @param introspectedTable
+     * @param serivceType
+     * @param baseApiDoc
+     * @return
+     */
+    protected Method getControllerSaveOrUpdateMethod(TopLevelClass topLevelClass, IntrospectedTable introspectedTable, FullyQualifiedJavaType serivceType, String baseApiDoc, String type) {
+        String serviceParamName = fullyQualifiedJavaType2FieldName(serivceType);
+        Method method = new Method(type);
+
+        method.addAnnotation("@ApiOperation(value = \"新增或修改" + baseApiDoc + "\")");
+        method.addAnnotation("@RequestMapping(value = \"" + type + "\", method = RequestMethod.POST)");
+        method.addAnnotation("@DataCheck");
+
+        // 设置可见性
+        method.setVisibility(JavaVisibility.PUBLIC);
+
+        FullyQualifiedJavaType doParamType = null;
+
+        // 一定为SaveOrUpdatePo
+        String poName = type.substring(0, 1).toUpperCase() + type.substring(1) + "Po";
+
+        InnerClass doParam = createMap.get(poName);
+        if (null == doParam) {
+            return null;
+        }
+        doParamType = doParam.getType();
+
+        topLevelClass.addImportedType(RESULT_POJO);
+        topLevelClass.addImportedType(doParamType);
+
+        String doParamName = fullyQualifiedJavaType2FieldName(doParamType);
+        // 设置入参
+        Parameter methodParam = new Parameter(doParamType, doParamName);
+        methodParam.addAnnotation("@RequestBody");
+        method.addParameter(methodParam);
+
+        // 设置返回值
+        FullyQualifiedJavaType returnType = new FullyQualifiedJavaType(RESULT_POJO);
+        returnType.addTypeArgument(new FullyQualifiedJavaType("java.lang.Object"));
+        method.setReturnType(returnType);
+        method.addBodyLine("return " + serviceParamName + "." + type + "(" + doParamName + ");");
+
+        return method;
+    }
+
+    /**
+     * 创建Controller的batch基础函数
+     *
+     * @param topLevelClass
+     * @param introspectedTable
+     * @param serivceType
+     * @param baseApiDoc
+     * @return
+     */
+    protected Method getControllerBatchBaseMethod(TopLevelClass topLevelClass, IntrospectedTable introspectedTable, FullyQualifiedJavaType serivceType, String baseApiDoc, String type) {
+        String serviceParamName = fullyQualifiedJavaType2FieldName(serivceType);
+        Method method = new Method("batch" + type.substring(0, 1).toUpperCase() + type.substring(1));
+        if (type.equals("insert")) {
+            method.addAnnotation("@ApiOperation(value = \"批量新增" + baseApiDoc + "\")");
+        } else if (type.equals("update")) {
+            method.addAnnotation("@ApiOperation(value = \"批量修改" + baseApiDoc + "\")");
+        }
+        method.addAnnotation("@RequestMapping(value = \"" + method.getName() + "\", method = RequestMethod.POST)");
+        method.addAnnotation("@DataCheck");
+
+        // 设置可见性
+        method.setVisibility(JavaVisibility.PUBLIC);
+
+        FullyQualifiedJavaType doParamType = null;
+
+        // 如果是PoVo 那么入参为InsertPo
+        if (this.hasPoVo) {
+            String poName = type.substring(0, 1).toUpperCase() + type.substring(1) + "Po";
+
+            InnerClass doParam = createMap.get(poName);
+            if (null == doParam) {
+                return null;
+            }
+            doParamType = doParam.getType();
+        } else {
+            // 如果是entity则入参是entity
+            doParamType = createMap.get("entity").getType();
+        }
+
+        topLevelClass.addImportedType(RESULT_POJO);
+        topLevelClass.addImportedType(doParamType);
+        topLevelClass.addImportedType(ANNOTATION_CHECK);
+
+        String doParamName = fullyQualifiedJavaType2FieldName(doParamType) + "List";
+        FullyQualifiedJavaType doParamListType = new FullyQualifiedJavaType(UTIL_LIST);
+        doParamListType.addTypeArgument(doParamType);
+        // 设置入参
+        Parameter methodParam = new Parameter(doParamListType, doParamName);
+        methodParam.addAnnotation("@RequestBody");
+        methodParam.addAnnotation("@Check(test = \"required\", cascade = true)");
+        method.addParameter(methodParam);
+
+        // 设置返回值
+        FullyQualifiedJavaType returnType = new FullyQualifiedJavaType(RESULT_POJO);
+        returnType.addTypeArgument(new FullyQualifiedJavaType("java.lang.Object"));
+        method.setReturnType(returnType);
+        method.addBodyLine("return " + serviceParamName + "." + method.getName() + "(" + doParamName + ");");
+
+        return method;
+    }
+
+    /**
      * 创建Controller的基础函数(insert or update)
      *
      * @param topLevelClass
@@ -288,8 +521,10 @@ public class WbfcModelGenerator extends PluginAdapter {
         Method method = new Method(type);
         if (type.equals("insert")) {
             method.addAnnotation("@ApiOperation(value = \"新增" + baseApiDoc + "\")");
-        } else {
+        } else if (type.equals("update")) {
             method.addAnnotation("@ApiOperation(value = \"修改" + baseApiDoc + "\")");
+        } else if (type.equals("saveOrUpdate")) {
+            method.addAnnotation("@ApiOperation(value = \"新增或修改" + baseApiDoc + "\")");
         }
         method.addAnnotation("@RequestMapping(value = \"" + type + "\", method = RequestMethod.POST)");
         method.addAnnotation("@DataCheck");
@@ -303,7 +538,7 @@ public class WbfcModelGenerator extends PluginAdapter {
         if (this.hasPoVo) {
             String poName = type.substring(0, 1).toUpperCase() + type.substring(1) + "Po";
 
-            CompilationUnit doParam = createMap.get(poName);
+            InnerClass doParam = createMap.get(poName);
             if (null == doParam) {
                 return null;
             }
@@ -352,7 +587,7 @@ public class WbfcModelGenerator extends PluginAdapter {
 
         // 如果是PoVo 那么入参和返回值分别要替换成PagePo和ListVo
         if (this.hasPoVo) {
-            CompilationUnit doParam = createMap.get("GetPo");
+            InnerClass doParam = createMap.get("GetPo");
             if (null == doParam) {
                 return null;
             }
@@ -418,7 +653,7 @@ public class WbfcModelGenerator extends PluginAdapter {
 
         topLevelClass.addImportedType(RESULT_POJO);
         topLevelClass.addImportedType(ENTITY_PAGE);
-        topLevelClass.addImportedType("java.util.List");
+        topLevelClass.addImportedType(UTIL_LIST);
         topLevelClass.addImportedType(pageParamType);
         topLevelClass.addImportedType(pageReturnParamType);
 
@@ -473,7 +708,7 @@ public class WbfcModelGenerator extends PluginAdapter {
         }
 
         topLevelClass.addImportedType(RESULT_POJO);
-        topLevelClass.addImportedType("java.util.List");
+        topLevelClass.addImportedType(UTIL_LIST);
         topLevelClass.addImportedType(pageParamType);
         topLevelClass.addImportedType(pageReturnParamType);
 
@@ -487,7 +722,7 @@ public class WbfcModelGenerator extends PluginAdapter {
 
         // 设置返回值
         FullyQualifiedJavaType returnType = new FullyQualifiedJavaType(RESULT_POJO);
-        FullyQualifiedJavaType returnListType = new FullyQualifiedJavaType("java.util.List");
+        FullyQualifiedJavaType returnListType = new FullyQualifiedJavaType(UTIL_LIST);
         returnListType.addTypeArgument(pageReturnParamType);
         returnType.addTypeArgument(returnListType);
         method.setReturnType(returnType);
@@ -548,25 +783,242 @@ public class WbfcModelGenerator extends PluginAdapter {
                 topLevelClass.addMethod(getMethod);
             }
 
-            // Insert函数
-            Method insertMethod = getServiceBaseMethod(topLevelClass, introspectedTable, mapperType, "insert", "新增");
-            topLevelClass.addMethod(insertMethod);
+            // 如果是精简模式就是saveOrUpdate
+            if (this.simplePoVo) {
+                // Insert函数
+                Method saveOrUpdateMethod = getServiceBaseMethod(topLevelClass, introspectedTable, mapperType, "saveOrUpdate", "新增或修改");
+                topLevelClass.addMethod(saveOrUpdateMethod);
 
-            // Update函数
-            Method updateMethod = getServiceBaseMethod(topLevelClass, introspectedTable, mapperType, "update", "修改");
-            topLevelClass.addMethod(updateMethod);
+                // 精简模式不支持batchInser和batchUpdate
 
-            // batDelete函数
-            Method batDeleteMethod = getServiceBatDeleleMethod(topLevelClass, introspectedTable, mapperType, "batDelete", "批量删除");
-            // 没有主键的情况下 没有批量删除方法
-            if (null != batDeleteMethod) {
-                topLevelClass.addMethod(batDeleteMethod);
+                // batDelete函数
+                Method batDeleteMethod = getServiceSimpleBatDeleleMethod(topLevelClass, introspectedTable, mapperType, "batDelete", "批量删除");
+                // 没有主键的情况下 没有批量删除方法
+                if (null != batDeleteMethod) {
+                    topLevelClass.addMethod(batDeleteMethod);
+                }
+
+            } else {
+                // Insert函数
+                Method insertMethod = getServiceBaseMethod(topLevelClass, introspectedTable, mapperType, "insert", "新增");
+                topLevelClass.addMethod(insertMethod);
+
+
+                // Update函数
+                Method updateMethod = getServiceBaseMethod(topLevelClass, introspectedTable, mapperType, "update", "修改");
+                topLevelClass.addMethod(updateMethod);
+
+
+                // batchInsert函数
+                if (this.batchInsert) {
+                    Method batchInsertMethod = getServiceBatchBasicMethod(topLevelClass, introspectedTable, mapperType, "insert", "批量新增");
+                    if (null != batchInsertMethod) {
+                        topLevelClass.addMethod(batchInsertMethod);
+                    }
+                }
+
+                // batchUpdate函数
+                if (this.batchUpdate) {
+                    Method batchUpdateMethod = getServiceBatchBasicMethod(topLevelClass, introspectedTable, mapperType, "update", "批量修改");
+                    if (null != batchUpdateMethod) {
+                        topLevelClass.addMethod(batchUpdateMethod);
+                    }
+                }
+
+                // batDelete函数
+                Method batDeleteMethod = getServiceBatDeleleMethod(topLevelClass, introspectedTable, mapperType, "batDelete", "批量删除");
+                // 没有主键的情况下 没有批量删除方法
+                if (null != batDeleteMethod) {
+                    topLevelClass.addMethod(batDeleteMethod);
+                }
             }
+
 
             GeneratedJavaFile gjf = new GeneratedJavaFile(topLevelClass, wbfcConfig.getServicePath(), context.getProperty(PropertyRegistry.CONTEXT_JAVA_FILE_ENCODING), context.getJavaFormatter());
             list.add(gjf);
             createMap.put("service", topLevelClass);
         }
+    }
+
+    /**
+     * 获取批量新增的函数
+     *
+     * @param topLevelClass
+     * @param introspectedTable
+     * @param mapperType
+     * @param type
+     * @param javaDoc
+     * @return
+     */
+    protected Method getServiceBatchBasicMethod(TopLevelClass topLevelClass, IntrospectedTable introspectedTable, FullyQualifiedJavaType mapperType, String type, String javaDoc) {
+        WbfcCommentGenerator commentGenerator = (WbfcCommentGenerator) context.getCommentGenerator();
+        String mapperParamName = fullyQualifiedJavaType2FieldName(mapperType);
+        Method method = new Method("batch" + type.substring(0, 1).toUpperCase() + type.substring(1));
+        // insert方法参数类型
+        FullyQualifiedJavaType doParamType = null;
+        // 写入数据库类型
+        FullyQualifiedJavaType intoDbType = null;
+
+        // 如果是PoVo 那么入参为xxPo
+        if (this.hasPoVo) {
+            String poName = type.substring(0, 1).toUpperCase() + type.substring(1) + "Po";
+
+            InnerClass doParam = createMap.get(poName);
+            if (null == doParam) {
+                return null;
+            }
+            doParamType = doParam.getType();
+        } else {
+            // 如果是entity则入参是entity
+            doParamType = createMap.get("entity").getType();
+        }
+        intoDbType = createMap.get("entity").getType();
+
+        topLevelClass.addImportedType(RESULT_POJO);
+        topLevelClass.addImportedType(doParamType);
+        topLevelClass.addImportedType(GOOGLE_LIST);
+        topLevelClass.addImportedType(intoDbType);
+        topLevelClass.addImportedType(CONVERTER_UTIL);
+
+
+        // 事务注解加入
+        topLevelClass.addImportedType("org.springframework.transaction.annotation.Transactional");
+
+        method.addAnnotation("@Transactional(readOnly = false)");
+
+        // 转成参数名
+        String doParamName = fullyQualifiedJavaType2FieldName(doParamType) + "List";
+        // 写入数据库参数名
+        String intoDbName = fullyQualifiedJavaType2FieldName(intoDbType);
+
+        method.setVisibility(JavaVisibility.PUBLIC);
+        FullyQualifiedJavaType doParamListType = new FullyQualifiedJavaType(UTIL_LIST);
+        doParamListType.addTypeArgument(doParamType);
+        // 设置入参
+        method.addParameter(new Parameter(doParamListType, doParamName));
+        // 设置返回值
+        FullyQualifiedJavaType returnType = new FullyQualifiedJavaType(RESULT_POJO);
+        FullyQualifiedJavaType returnPageType = new FullyQualifiedJavaType("java.lang.Object");
+        returnType.addTypeArgument(returnPageType);
+        method.setReturnType(returnType);
+
+        // 设置方法注释
+        commentGenerator.addMethodComment(method, javaDoc);
+
+        method.addBodyLine("ResultPoJo<Object> result = new ResultPoJo<>();");
+        method.addBodyLine("List<" + intoDbType.getShortName() + "> dbList = Lists.newArrayList();");
+
+        method.addBodyLine("for (" + doParamType.getShortName() + " temp : " + doParamName + ") {");
+        method.addBodyLine(intoDbType.getShortName() + " doTemp = new " + intoDbType.getShortName() + "();");
+        method.addBodyLine("ConverterUtil.copyProperties(temp, doTemp);");
+        if (type.equals("insert")) {
+            method.addBodyLine("doTemp.preInsert();");
+        } else if (type.equals("update")) {
+            method.addBodyLine("doTemp.preUpdate();");
+        }
+        method.addBodyLine("dbList.add(doTemp);");
+        method.addBodyLine("}");
+        if (type.equals("insert")) {
+            method.addBodyLine(mapperParamName + ".batchInsert(dbList);");
+        } else if (type.equals("update")) {
+            method.addBodyLine(mapperParamName + ".batchUpdate(dbList);");
+        }
+
+        method.addBodyLine("return result;");
+        return method;
+    }
+
+    /**
+     * 批量删除
+     *
+     * @param topLevelClass
+     * @param introspectedTable
+     * @param mapperType
+     * @param type
+     * @param javaDoc
+     * @return
+     */
+    protected Method getServiceSimpleBatDeleleMethod(TopLevelClass topLevelClass, IntrospectedTable introspectedTable, FullyQualifiedJavaType mapperType, String type, String javaDoc) {
+        WbfcCommentGenerator commentGenerator = (WbfcCommentGenerator) context.getCommentGenerator();
+        String mapperParamName = fullyQualifiedJavaType2FieldName(mapperType);
+        Method method = new Method(type);
+        // insert方法参数类型
+        FullyQualifiedJavaType doParamType = new FullyQualifiedJavaType(SIMPLE_DELETE_PO);
+        // 写入数据库类型
+        FullyQualifiedJavaType intoDbType = null;
+        intoDbType = createMap.get("entity").getType();
+
+        topLevelClass.addImportedType(RESULT_POJO);
+        topLevelClass.addImportedType(doParamType);
+        topLevelClass.addImportedType("org.springframework.stereotype.Service");
+        if (this.batchDelete) {
+            topLevelClass.addImportedType(GOOGLE_LIST);
+        }
+        topLevelClass.addAnnotation("@Service");
+
+        // 事务注解加入
+        topLevelClass.addImportedType("org.springframework.transaction.annotation.Transactional");
+        method.addAnnotation("@Transactional(readOnly = false)");
+
+        // 转成参数名
+        String doParamName = "po";
+        // 写入数据库参数名
+        String intoDbName = fullyQualifiedJavaType2FieldName(intoDbType);
+        topLevelClass.addImportedType(doParamType);
+
+        method.setVisibility(JavaVisibility.PUBLIC);
+        // 设置入参
+        method.addParameter(new Parameter(doParamType, doParamName));
+        // 设置返回值
+        FullyQualifiedJavaType returnType = new FullyQualifiedJavaType(RESULT_POJO);
+        FullyQualifiedJavaType returnPageType = new FullyQualifiedJavaType("java.lang.Object");
+        returnType.addTypeArgument(returnPageType);
+        method.setReturnType(returnType);
+
+        // 设置方法注释
+        commentGenerator.addMethodComment(method, javaDoc);
+
+        method.addBodyLine("ResultPoJo<Object> result = new ResultPoJo<>();");
+        // 上面创建Po时进行过判断 若没有主键 不会进入这里，一定有一个主键
+        IntrospectedColumn priColumn = introspectedTable.getPrimaryKeyColumns().get(0);
+        // 主键类型
+        FullyQualifiedJavaType priType = priColumn.getFullyQualifiedJavaType();
+        // 获取主键Set方法
+        String setMethodName = getSetterMethodName(priColumn.getJavaProperty());
+        // Po需要进行转换
+        topLevelClass.addImportedType(intoDbType);
+
+        String doDelList = doParamName + ".getIds()";
+        // 循环列表
+        if (this.batchDelete) {
+            method.addBodyLine("List<" + intoDbType.getShortName() + "> delDbList = Lists.newArrayList();");
+        }
+        method.addBodyLine("for(" + priType.getShortName() + " delId : " + doDelList + ") {");
+        Optional<IntrospectedColumn> delColumn = introspectedTable.getColumn("del_flag");
+        // 包含删除标识时 生成逻辑删除
+        if (delColumn.isPresent()) {
+            // 不包含删除标识生成物理删除
+            method.addBodyLine(intoDbType.getShortName() + " " + intoDbName + " = new " + intoDbType.getShortName() + "();");
+            method.addBodyLine(intoDbName + "." + setMethodName + "(delId);");
+            method.addBodyLine(intoDbName + ".preUpdate();");
+            if (!this.batchDelete) {
+                method.addBodyLine(mapperParamName + ".deleteLogic(" + intoDbName + ");");
+            } else {
+                method.addBodyLine("delDbList.add(" + intoDbName + ");");
+            }
+        } else {
+            if (!this.batchDelete) {
+                method.addBodyLine(mapperParamName + ".deleteByPrimaryKey(delId);");
+            } else {
+                method.addBodyLine("delDbList.add(" + intoDbName + ");");
+            }
+        }
+        method.addBodyLine("}");
+        if (this.batchDelete) {
+            method.addBodyLine(mapperParamName + ".batchDelete(delDbList);");
+        }
+        method.addBodyLine("return result;");
+        return method;
     }
 
     /**
@@ -591,13 +1043,13 @@ public class WbfcModelGenerator extends PluginAdapter {
         // 如果是PoVo 那么入参为InsertPo
         if (this.hasPoVo) {
             String poName = type.substring(0, 1).toUpperCase() + type.substring(1) + "Po";
-            CompilationUnit doParam = createMap.get(poName);
+            InnerClass doParam = createMap.get(poName);
             if (null == doParam) {
                 return null;
             }
             doParamType = doParam.getType();
         } else {
-            doParamType = new FullyQualifiedJavaType("java.util.List");
+            doParamType = new FullyQualifiedJavaType(UTIL_LIST);
             // 批量删除的入参是List<entity>
             topLevelClass.addImportedType(createMap.get("entity").getType());
             doParamType.addTypeArgument(createMap.get("entity").getType());
@@ -607,6 +1059,9 @@ public class WbfcModelGenerator extends PluginAdapter {
         topLevelClass.addImportedType(RESULT_POJO);
         topLevelClass.addImportedType(doParamType);
         topLevelClass.addImportedType("org.springframework.stereotype.Service");
+        if (this.batchDelete) {
+            topLevelClass.addImportedType(GOOGLE_LIST);
+        }
         topLevelClass.addAnnotation("@Service");
 
         // 事务注解加入
@@ -643,6 +1098,9 @@ public class WbfcModelGenerator extends PluginAdapter {
         FullyQualifiedJavaType priType = priColumn.getFullyQualifiedJavaType();
         // 获取主键Set方法
         String setMethodName = getSetterMethodName(priColumn.getJavaProperty());
+        if (this.batchDelete) {
+            method.addBodyLine("List<" + intoDbType.getShortName() + "> delDbList = Lists.newArrayList();");
+        }
         // 如果是PoVo则调用findPage
         if (this.hasPoVo) {
             // Po需要进行转换
@@ -657,11 +1115,22 @@ public class WbfcModelGenerator extends PluginAdapter {
                 method.addBodyLine(intoDbType.getShortName() + " " + intoDbName + " = new " + intoDbType.getShortName() + "();");
                 method.addBodyLine(intoDbName + "." + setMethodName + "(delId);");
                 method.addBodyLine(intoDbName + ".preUpdate();");
-                method.addBodyLine(mapperParamName + ".deleteLogic(" + intoDbName + ");");
+                if (!this.batchDelete) {
+                    method.addBodyLine(mapperParamName + ".deleteLogic(" + intoDbName + ");");
+                } else {
+                    method.addBodyLine("delDbList.add(" + intoDbName + ");");
+                }
             } else {
-                method.addBodyLine(mapperParamName + ".deleteByPrimaryKey(delId);");
+                if (!this.batchDelete) {
+                    method.addBodyLine(mapperParamName + ".deleteByPrimaryKey(delId);");
+                } else {
+                    method.addBodyLine("delDbList.add(" + intoDbName + ");");
+                }
             }
             method.addBodyLine("}");
+            if (this.batchDelete) {
+                method.addBodyLine(mapperParamName + ".batchDelete(delDbList);");
+            }
         } else {
             // 入参即为List<entity>
             // 循环列表
@@ -671,12 +1140,23 @@ public class WbfcModelGenerator extends PluginAdapter {
             String getMethodName = getGetterMethodName(priColumn.getJavaProperty(), priType);
             // 包含删除标识时 生成逻辑删除
             if (delColumn.isPresent()) {
-                method.addBodyLine(mapperParamName + ".deleteLogic(" + intoDbName + ");");
+                if (!this.batchDelete) {
+                    method.addBodyLine(mapperParamName + ".deleteLogic(" + intoDbName + ");");
+                } else {
+                    method.addBodyLine("delDbList.add(" + intoDbName + ");");
+                }
             } else {
                 // 不包含删除标识生成物理删除
-                method.addBodyLine(mapperParamName + ".deleteByPrimaryKey(" + intoDbName + "." + getMethodName + "());");
+                if (!this.batchDelete) {
+                    method.addBodyLine(mapperParamName + ".deleteByPrimaryKey(" + intoDbName + "." + getMethodName + "());");
+                } else {
+                    method.addBodyLine("delDbList.add(" + intoDbName + ");");
+                }
             }
             method.addBodyLine("}");
+            if (this.batchDelete) {
+                method.addBodyLine(mapperParamName + ".batchDelete(delDbList);");
+            }
         }
         method.addBodyLine("return result;");
         return method;
@@ -698,11 +1178,11 @@ public class WbfcModelGenerator extends PluginAdapter {
         // 写入数据库类型
         FullyQualifiedJavaType intoDbType = null;
 
-        // 如果是PoVo 那么入参为InsertPo
+        // 如果是PoVo 那么入参为xxPo
         if (this.hasPoVo) {
             String poName = type.substring(0, 1).toUpperCase() + type.substring(1) + "Po";
 
-            CompilationUnit doParam = createMap.get(poName);
+            InnerClass doParam = createMap.get(poName);
             if (null == doParam) {
                 return null;
             }
@@ -738,13 +1218,32 @@ public class WbfcModelGenerator extends PluginAdapter {
         commentGenerator.addMethodComment(method, javaDoc);
 
         method.addBodyLine("ResultPoJo<Object> result = new ResultPoJo<>();");
-        // 如果是PoVo则调用findPage
+
+
+        // 如果是PoVo则需要属性拷贝
         if (this.hasPoVo) {
-            // Po需要进行转换
             topLevelClass.addImportedType(intoDbType);
-            method.addBodyLine(intoDbType.getShortName() + " " + intoDbName + " = new " + intoDbType.getShortName() + "();");
             topLevelClass.addImportedType(CONVERTER_UTIL);
-            method.addBodyLine("ConverterUtil.copyProperties(" + doParamName + ", " + intoDbName + ");");
+            List<IntrospectedColumn> columnList = introspectedTable.getPrimaryKeyColumns();
+
+            if (this.simplePoVo && ConverterUtil.isNotEmpty(columnList)) {
+                IntrospectedColumn priColumn = introspectedTable.getPrimaryKeyColumns().get(0);
+                String idGetMethodName = getGetterMethodName(priColumn.getJavaProperty(), priColumn.getFullyQualifiedJavaType());
+                method.addBodyLine(intoDbType.getShortName() + " " + intoDbName + " = new " + intoDbType.getShortName() + "();");
+                // Po需要进行转换
+                method.addBodyLine("ConverterUtil.copyProperties(" + doParamName + ", " + intoDbName + ");");
+                method.addBodyLine("if (ConverterUtil.isEmpty(" + doParamName + "." + idGetMethodName + "())) {");
+                method.addBodyLine(intoDbName + ".preInsert();");
+                method.addBodyLine(mapperParamName + ".insert(" + intoDbName + ");");
+                method.addBodyLine("} else {");
+                method.addBodyLine(intoDbName + ".preUpdate();");
+                method.addBodyLine(mapperParamName + ".updateByPrimaryKeySelective(" + intoDbName + ");");
+                method.addBodyLine("}");
+            } else {
+                method.addBodyLine(intoDbType.getShortName() + " " + intoDbName + " = new " + intoDbType.getShortName() + "();");
+                // Po需要进行转换
+                method.addBodyLine("ConverterUtil.copyProperties(" + doParamName + ", " + intoDbName + ");");
+            }
         } else {
             // 入参即为entity
             intoDbName = doParamName;
@@ -752,10 +1251,11 @@ public class WbfcModelGenerator extends PluginAdapter {
         if (type.equals("insert")) {
             method.addBodyLine(intoDbName + ".preInsert();");
             method.addBodyLine(mapperParamName + ".insert(" + intoDbName + ");");
-        } else {
+        } else if (type.equals("update")) {
             method.addBodyLine(intoDbName + ".preUpdate();");
             method.addBodyLine(mapperParamName + ".updateByPrimaryKeySelective(" + intoDbName + ");");
         }
+
         method.addBodyLine("return result;");
         return method;
     }
@@ -780,7 +1280,7 @@ public class WbfcModelGenerator extends PluginAdapter {
         if (this.hasPoVo) {
             String poName = "ListPo";
 
-            CompilationUnit doParam = createMap.get(poName);
+            InnerClass doParam = createMap.get(poName);
             if (null == doParam) {
                 return null;
             }
@@ -804,7 +1304,7 @@ public class WbfcModelGenerator extends PluginAdapter {
         method.addParameter(new Parameter(doParamType, doParamName));
         // 设置返回值
         FullyQualifiedJavaType returnType = new FullyQualifiedJavaType(RESULT_POJO);
-        FullyQualifiedJavaType returnListType = new FullyQualifiedJavaType("java.util.List");
+        FullyQualifiedJavaType returnListType = new FullyQualifiedJavaType(UTIL_LIST);
         returnListType.addTypeArgument(retrunType);
         returnType.addTypeArgument(returnListType);
         method.setReturnType(returnType);
@@ -836,7 +1336,7 @@ public class WbfcModelGenerator extends PluginAdapter {
 
         // 如果是PoVo 那么入参和返回值分别要替换成PagePo和ListVo
         if (this.hasPoVo) {
-            CompilationUnit doParam = createMap.get("GetPo");
+            InnerClass doParam = createMap.get("GetPo");
             if (null == doParam) {
                 return null;
             }
@@ -910,7 +1410,7 @@ public class WbfcModelGenerator extends PluginAdapter {
 
         topLevelClass.addImportedType(RESULT_POJO);
         topLevelClass.addImportedType(ENTITY_PAGE);
-        topLevelClass.addImportedType("java.util.List");
+        topLevelClass.addImportedType(UTIL_LIST);
         topLevelClass.addImportedType(pageParamType);
         topLevelClass.addImportedType(pageReturnParamType);
 
@@ -963,8 +1463,12 @@ public class WbfcModelGenerator extends PluginAdapter {
             createPoOrVo(plugins, wbfcConfig, introspectedTable, "PagePo", list);
             createPoOrVo(plugins, wbfcConfig, introspectedTable, "GetPo", list);
             createPoOrVo(plugins, wbfcConfig, introspectedTable, "ListPo", list);
-            createPoOrVo(plugins, wbfcConfig, introspectedTable, "InsertPo", list);
-            createPoOrVo(plugins, wbfcConfig, introspectedTable, "UpdatePo", list);
+            if (this.simplePoVo) {
+                createPoOrVo(plugins, wbfcConfig, introspectedTable, "SaveOrUpdatePo", list);
+            } else {
+                createPoOrVo(plugins, wbfcConfig, introspectedTable, "InsertPo", list);
+                createPoOrVo(plugins, wbfcConfig, introspectedTable, "UpdatePo", list);
+            }
             createPoOrVo(plugins, wbfcConfig, introspectedTable, "BatDeletePo", list);
         }
     }
@@ -1001,11 +1505,11 @@ public class WbfcModelGenerator extends PluginAdapter {
         // 构造函数
         if (introspectedTable.isConstructorBased()) {
             addParameterizedConstructor(topLevelClass, introspectedTable);
-
             if (!introspectedTable.isImmutable()) {
                 addDefaultConstructor(topLevelClass, introspectedTable);
             }
         }
+
         // 是否为PagePo
         if (type.endsWith("PagePo")) {
             FullyQualifiedJavaType superClass = new FullyQualifiedJavaType(PAGE_PO);
@@ -1023,7 +1527,7 @@ public class WbfcModelGenerator extends PluginAdapter {
         }
         // 是否为BatDeletePo
         if (type.endsWith("BatDeletePo")) {
-            topLevelClass.addImportedType("java.util.List");
+            topLevelClass.addImportedType(UTIL_LIST);
             List<IntrospectedColumn> priList = Lists.newArrayList();
             // 生成属性和方法
             for (IntrospectedColumn introspectedColumn : introspectedColumns) {
@@ -1038,7 +1542,7 @@ public class WbfcModelGenerator extends PluginAdapter {
             }
 
             // 如果只有一个主键就直接使用类型作为泛型
-            FullyQualifiedJavaType paramType = new FullyQualifiedJavaType("java.util.List");
+            FullyQualifiedJavaType paramType = new FullyQualifiedJavaType(UTIL_LIST);
             // 只可能有一个主键的，多个主键会被拆分成entity和entityKey 因此没有多个的情况了
             FullyQualifiedJavaType paramArg = priList.get(0).getFullyQualifiedJavaType();
             // if (priList.size() == 1) {
@@ -1173,21 +1677,24 @@ public class WbfcModelGenerator extends PluginAdapter {
                         field.addAnnotation("@JsonDeserialize(using = OffsetDateTimeDeserializer.class)");
                     }
                     // 如果是Inser和Update则添加check注解
-                    if (type.endsWith("InsertPo") || type.endsWith("UpdatePo")) {
+                    if (type.endsWith("InsertPo") || type.endsWith("UpdatePo") || type.endsWith("SaveOrUpdatePo")) {
                         topLevelClass.addImportedType(ANNOTATION_CHECK);
                     }
                     List<String> swaggerAttrList = Lists.newArrayList();
                     swaggerAttrList.add("value = \"" + swaggerAnnStr + "\"");
                     // 如果是Update则添加check注解
-                    if (type.endsWith("InsertPo") || type.endsWith("UpdatePo")) {
+                    if (type.endsWith("InsertPo") || type.endsWith("UpdatePo") || type.endsWith("SaveOrUpdatePo")) {
                         List<String> testList = Lists.newArrayList();
                         List<String> attrList = Lists.newArrayList();
                         List<String> swaggerAllowList = Lists.newArrayList();
                         boolean isNullable = introspectedColumn.isNullable();
                         // 非空的判断
                         if (!isNullable || isPrimaryKey) {
-                            testList.add("\"required\"");
-                            swaggerAttrList.add("required = true");
+                            // 如果是精简的模式时主键不做非空校验
+                            if (!(type.endsWith("SaveOrUpdatePo") && isPrimaryKey)) {
+                                testList.add("\"required\"");
+                                swaggerAttrList.add("required = true");
+                            }
                         }
                         // 长度的判断
                         int colLength = introspectedColumn.getLength();
@@ -1322,7 +1829,7 @@ public class WbfcModelGenerator extends PluginAdapter {
      * @param plugins
      * @param list
      */
-    protected void replaceEntity(IntrospectedTable introspectedTable, Plugin plugins, List<GeneratedJavaFile> list) {
+    protected void genderEntity(IntrospectedTable introspectedTable, Plugin plugins, List<GeneratedJavaFile> list) {
         WbfcCommentGenerator commentGenerator = (WbfcCommentGenerator) context.getCommentGenerator();
         // // 创建实体类接口
         // FullyQualifiedJavaType type = genderEntityI(introspectedTable, list, commentGenerator);
@@ -1341,10 +1848,11 @@ public class WbfcModelGenerator extends PluginAdapter {
 
         if (introspectedTable.isConstructorBased()) {
             addParameterizedConstructor(topLevelClass, introspectedTable);
+        }
 
-            if (!introspectedTable.isImmutable()) {
-                addDefaultConstructor(topLevelClass, introspectedTable);
-            }
+        // 默认创建一个无参构造器
+        if (!introspectedTable.isImmutable()) {
+            addDefaultConstructor(topLevelClass, introspectedTable);
         }
 
         Class<?> clazz = null;
@@ -1360,6 +1868,7 @@ public class WbfcModelGenerator extends PluginAdapter {
                     clazz = Class.forName(DATA_LONG_ENTITY);
                 }
                 supperMap = Lists.newArrayList(ConverterUtil.getAllFields(clazz)).stream().collect(Collectors.toMap(java.lang.reflect.Field::getName, a -> a, (v1, v2) -> v1));
+
             }
         } catch (ClassNotFoundException e) {
             e.printStackTrace();

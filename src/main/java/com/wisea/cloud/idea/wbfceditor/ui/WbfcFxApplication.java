@@ -23,9 +23,7 @@ import org.apache.commons.compress.utils.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.util.List;
 
@@ -137,6 +135,28 @@ public class WbfcFxApplication extends Application {
                 hide();
             }
         });
+
+        /*System.setOut(new PrintStream(new OutputStream() {
+            @Override
+            public void write(int b) {
+                String text = String.valueOf((char) b);
+                Platform.runLater(() -> {
+                    if( text.startsWith("WebView Console.log")) return;
+                    text.replaceAll("\\s*|\t|\r", "\n");
+                    webEngine.executeScript("appendText('" + text +"')");
+                });
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) {
+                String text = new String(b, off, len);
+                Platform. runLater(() -> {
+                    if( text.startsWith("WebView Console.log")) return;
+                    text.replaceAll("\\s*|\t|\r", "\n");
+                    webEngine.executeScript("appendText('" + text +"')");
+                });
+            }
+        }, true));*/
 
         Scene scene = new Scene(browser, 1300, 800);
         primaryStage.setTitle("WbfcEditor - Java codes generator");
