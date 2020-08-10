@@ -2,6 +2,7 @@ package com.wisea.cloud.idea.wbfceditor.ui;
 
 
 import com.sun.javafx.webkit.WebConsoleListener;
+import com.wisea.cloud.common.util.ConverterUtil;
 import com.wisea.cloud.idea.wbfceditor.generator.TestGreneator;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -13,13 +14,12 @@ import javafx.stage.Stage;
 import netscape.javascript.JSObject;
 
 import java.io.File;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.net.URL;
 
 
 public class TestCharsetApplication extends Application {
     private static TestGreneator wbfcGenerator = new TestGreneator();
+    private static WebEngine webEngine = null;
     /**
      * 用于与Javascript引擎通信。
      */
@@ -34,7 +34,7 @@ public class TestCharsetApplication extends Application {
         URL url = new File(getClass().getResource("/templates/index.html").toURI()).toURI().toURL();
 
         WebView webView = new WebView();
-        final WebEngine webEngine = webView.getEngine();
+        webEngine = webView.getEngine();
 
         // 设置Java的监听器
         webEngine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
@@ -93,5 +93,29 @@ public class TestCharsetApplication extends Application {
 
         // 这里加载页面
         webEngine.load(getClass().getResource("/templates/index.html").toExternalForm());
+    }
+
+    public static void appendLog(String text) {
+        if (null != webEngine && null != text) {
+            Platform.runLater(() -> {
+                webEngine.executeScript("appendText('" + text + "')");
+            });
+        }
+    }
+
+    public static void setDiyXml(String text) {
+        if (null != webEngine && null != text) {
+            Platform.runLater(() -> {
+                webEngine.executeScript("setDiyXml('" + text + "')");
+            });
+        }
+    }
+
+    public static void setGenerateStatus(String text) {
+        if (null != webEngine && null != text) {
+            Platform.runLater(() -> {
+                webEngine.executeScript("setGenerateStatus('" + text + "')");
+            });
+        }
     }
 }

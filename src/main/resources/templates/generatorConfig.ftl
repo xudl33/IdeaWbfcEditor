@@ -6,10 +6,10 @@
 <generatorConfiguration>
     <#if logProperties?? >
     <!-- 引入配置文件 -->
-    <properties url="${logProperties}"/>
+    <properties resource="${logProperties}"/>
     </#if>
 
-    <!-- 指定数据连接驱动jar地址 这里由于使用了maven仓库，不需要指定jar包了 -->
+    <!-- 指定数据连接驱动jar地址 -->
     <classPathEntry location="${classPathEntry}" />
 
     <!-- 一个数据库一个context -->

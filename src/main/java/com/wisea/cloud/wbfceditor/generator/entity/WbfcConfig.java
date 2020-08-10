@@ -1,16 +1,22 @@
 package com.wisea.cloud.wbfceditor.generator.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.wisea.cloud.common.util.ConverterUtil;
 import com.wisea.cloud.model.annotation.Check;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class WbfcConfig {
+/**
+ * Wbfc代码生成器配置文件
+ *
+ */
+public class WbfcConfig implements Serializable {
 
     private String logProperties;
 
@@ -75,6 +81,9 @@ public class WbfcConfig {
     private List<WbfcDataTable> tablesCloumnList = Lists.newArrayList();
 
     private List<String> tablesList = Lists.newArrayList();
+
+    private String hasXml = "false";
+    private String diyXml;
 
     @Check(test = "required")
     private String hasController = "true";
@@ -251,6 +260,7 @@ public class WbfcConfig {
         this.xmlPackage = xmlPackage;
     }
 
+    @JsonIgnore
     public List<String> getTablesList() {
         return tablesList;
     }
@@ -291,6 +301,7 @@ public class WbfcConfig {
         this.hasPoVo = hasPoVo;
     }
 
+    @JsonIgnore
     public List<WbfcDataTable> getTablesCloumnList() {
         return tablesCloumnList;
     }
@@ -305,6 +316,23 @@ public class WbfcConfig {
 
     public void setSimplePoVo(String simplePoVo) {
         this.simplePoVo = simplePoVo;
+    }
+
+    public String getHasXml() {
+        return hasXml;
+    }
+
+    public void setHasXml(String hasXml) {
+        this.hasXml = hasXml;
+    }
+
+    @JsonIgnore
+    public String getDiyXml() {
+        return diyXml;
+    }
+
+    public void setDiyXml(String diyXml) {
+        this.diyXml = diyXml;
     }
 
     public WbfcDataTable getDataTable(String tableName) {

@@ -20,8 +20,12 @@
         }
 
         .has-tools .el-form-item {
-            width: 10%;
+            width: 12%;
             display: inline-block;
+        }
+
+        .has-tools .el-form-item:first-child {
+            width: 10%;
         }
 
         .has-tools .el-form-item__label {
@@ -53,6 +57,32 @@
         .content {
             padding: 1rem;
         }
+
+        .bottom-bar {
+            margin: 0px auto;
+            float: none;
+        }
+
+        .bottom-bar .bottom-bar-btn {
+            margin-top: 12px;
+        }
+
+        .log-console {
+            border: 1px solid #DCDFE6;
+            min-height: 10rem;
+        }
+        .log-body {
+            max-height: 20rem;
+            overflow-y: auto;
+        }
+        .log-content {
+            display: block;
+            word-break: break-word;
+        }
+        .log-loading {
+            display: inline-block;
+            padding: 2rem 0rem 1rem 0rem;
+        }
     </style>
 </head>
 <body>
@@ -62,8 +92,8 @@
      element-loading-background="rgba(0, 0, 0, 0.8)">
     <div class="content">
         <el-steps :active="active" finish-status="success">
-            <el-step title="1 - 配置包路径"></el-step>
-            <el-step title="2 - 选择生成规则"></el-step>
+            <el-step title="1 - 配置路径"></el-step>
+            <el-step title="2 - 配置生成规则"></el-step>
             <el-step title="3 - 开始生成"></el-step>
         </el-steps>
         <el-divider></el-divider>
@@ -71,6 +101,18 @@
             <el-form ref="form" :model="form" label-width="10%" :rules="formFules">
                 <div class="has-tools">
                     <el-form-item label-width="50%">
+                    </el-form-item>
+                    <el-form-item label="自定义XML" label-width="70%">
+                        <div slot="label">
+                            <span>自定义XML</span>
+                            <el-tooltip placement="bottom" effect="light">
+                                <div slot="content">
+                                    <span>开启该项后,在第三步骤时会根据前两步的配置生成XML,点击【生成】按钮时将使用XML进行生成</span>
+                                </div>
+                                <el-button type="text" icon="el-icon-question"></el-button>
+                            </el-tooltip>
+                        </div>
+                        <el-switch v-model="form.hasXml" active-value="true" inactive-value="false"></el-switch>
                     </el-form-item>
                     <el-form-item label="Controller" label-width="50%">
                         <el-switch v-model="form.hasController" active-value="true" inactive-value="false"></el-switch>
@@ -186,16 +228,29 @@
                     </template>
                 </el-table-column>
             </el-table>
-            <span> {{status}} </span>
+
         </div>
         <div v-if="active == 3">
-
+            <div v-if="form.hasXml">
+                <el-input v-loading="genXmlLoading" type="textarea" :autosize="{ minRows: 3, maxRows: 50}" v-model="form.diyXml"></el-input>
+            </div>
+            <div>
+                <fieldset class="log-console">
+                    <legend>Generator Log Console</legend>
+                    <div class="log-body">
+                        <span class="log-content" v-for="(item, index) in status" :key="'log_' + index"> {{item}} </span>
+                        <div class="log-loading" v-if="generateCodeLoading" v-loading="true"></div>
+                    </div>
+                </fieldset>
+            </div>
         </div>
         <el-divider></el-divider>
         <el-row>
-            <el-col :span="4" style="margin: 0px auto;float: none;">
-                <el-button style="margin-top: 12px;" @click="pres">上一步</el-button>
-                <el-button v-if="active < 3" style="margin-top: 12px;" @click="next">下一步</el-button>
+            <el-col :xl="4" :lg="5" class="bottom-bar">
+                <el-button class="bottom-bar-btn" @click="pres" :diabled="generateCodeLoading">上一步</el-button>
+                <el-button v-if="active < 3" class="bottom-bar-btn" @click="next">下一步</el-button>
+                <el-button v-if="active >= 3" class="bottom-bar-btn" @click="confimGen" :diabled="generateCodeLoading">生成</el-button>
+                <el-button v-if="active >= 3" class="bottom-bar-btn" @click="closeWinodow" :diabled="generateCodeLoading">关闭</el-button>
             </el-col>
         </el-row>
     </div>
@@ -377,7 +432,7 @@
                     ],
                     xmlPackage: [{required: true, message: 'XML 包名不能为空', trigger: 'blur'}],
                 },
-                status: '',
+                status: [],
                 tableData: [],
                 dialogVisible: false,
                 updateForm: {
@@ -392,7 +447,8 @@
                     }
                 },
                 dialogColumnVisible: false,
-
+                genXmlLoading: false, // 生成XML进度
+                generateCodeLoading: false, // 生成code进度
             }
         },
         watch: {
@@ -410,9 +466,17 @@
                     }
                     this.form.entityPath = val;
                     this.form.daoPath = val;
-                    let subIndex = val.lastIndexOf("/");
-                    let valIndex = subIndex > 0 ? subIndex : val.lastIndexOf("\\");
-                    let tempSub = val.substring(0, valIndex) + (subIndex > 0 ? '/' : '\\' + 'resources');
+                    let tmpVal = val;
+                    // 判断是否由/或\结尾
+                    if ((tmpVal.indexOf("/", tmpVal.length - 1) !== -1) || (tmpVal.indexOf("\\", tmpVal.length - 1) !== -1)) {
+                        tmpVal = tmpVal.substring(0, tmpVal.length - 1);
+                    }
+                    // 最后一级目录位置
+                    let subIndex = tmpVal.lastIndexOf("/");
+                    let unSubIndex = tmpVal.lastIndexOf("\\");
+                    let tempIndex = subIndex > unSubIndex ? subIndex : unSubIndex;
+                    // 截取并添加resources
+                    let tempSub = tmpVal.substring(0, tempIndex) + (subIndex > unSubIndex ? '/' : '\\') + 'resources';
                     this.form.xmlPath = tempSub;
                 }
             },
@@ -456,25 +520,15 @@
                     if (this.active++ > 2) this.active = 3;
                 }
                 if (this.active >= 3) {
-                    this.$confirm('您确认要按照该配置生成代码(目录会被覆盖生成)?', '提示', {
-                        confirmButtonText: '确定',
-                        cancelButtonText: '取消',
-                        type: 'warning'
-                    }).then(() => {
-                        this.generate();
-                    }).catch((e) => {
-                        if ('cancel' == e) {
-                            this.active = 2;
-                            return;
-                        }
-                        this.$message({
-                            type: 'info',
-                            message: '生成失败，请参考控制台日志'
-                        });
-                    });
+                    this.genXml();
+                    // this.confimGen();
                 }
             },
             pres() {
+                if (this.active>= 3) {
+                    this.form.diyXml = null;
+                    this.$set(this, 'status', []);
+                }
                 if (this.active-- < 2) this.active = 1;
             },
             openEdit(index, row) {
@@ -588,31 +642,55 @@
                     tempIndex++;
                 }, 1000);
             },
-            generate() {
-                console.log("tabledata = " + JSON.stringify(this.tableData));
+            saveConf() {
                 let wbfcConfig = Object.assign({}, this.form);
                 wbfcConfig.tablesCloumnList = Object.assign(this.tableData);
-                console.log("tabledata = " + JSON.stringify(wbfcConfig));
+                //console.log("tabledata = " + JSON.stringify(wbfcConfig));
+                // 保存配置参数
                 saveWbfcConfig(wbfcConfig);
-
-                let genRes = generateCodes();
-                if ("success" == genRes) {
-                    this.$alert('生成成功', '-提示-', {
-                        confirmButtonText: '确定',
-                        callback: action => {
-                            closeApplication();
-                        }
-                    });
-                    return;
-                } else {
-                    this.$alert('生成失败,请到控制台查看错误日志', '-提示-', {
-                        confirmButtonText: '确定',
-                        callback: action => {
-                            closeApplication();
-                        }
-                    });
-                    return;
+            },
+            async(func, thenFunc, catchFunc) {
+                var promise = new Promise(function (resolve, reject) {
+                    setTimeout(func, 1000, resolve, reject);
+                });
+                if (thenFunc) promise.then(thenFunc);
+                if (catchFunc) promise.then(catchFunc);
+                return promise;
+            },
+            genXml() {
+                if ('true' == this.form.hasXml) {
+                    this.genXmlLoading = true;
+                    // 保存配置
+                    this.saveConf();
+                    // 生成XML
+                    generatorXml();
+                    // this.form.diyXml = generatorXml();
                 }
+            },
+            confimGen() {
+                this.$confirm('您确认要按照该配置生成代码(目录会被覆盖生成)?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    this.generate();
+                }).catch((e) => {
+                    if ('cancel' == e) {
+                        return;
+                    }
+                    this.$message({
+                        type: 'info',
+                        message: '生成失败，请参考控制台日志'
+                    });
+                });
+            },
+            generate() {
+                //console.log("tabledata = " + JSON.stringify(this.tableData));
+                this.$set(this, 'status', []);
+                this.generateCodeLoading = true;
+                // 保存配置
+                this.saveConf();
+                generateCodes();
             },
             checkDbConnect() {
                 let res = checkDbConnection();
@@ -626,8 +704,23 @@
                     return;
                 }
             },
-            appendText(text){
-                this.status += text;
+            closeWinodow() {
+                closeApplication();
+            },
+            appendText(text) {
+                if (text) this.status.push(text);
+            },
+            setDiyXml(xml){
+                this.genXmlLoading = false;
+                this.form.diyXml = xml;
+            },
+            setGenerateStatus(status){
+                this.generateCodeLoading = false;
+                if('success' == status){
+                    this.$alert('生成成功');
+                } else {
+                    this.$alert('生成失败,请到控制台查看错误日志');
+                }
             }
         },
 
@@ -730,10 +823,9 @@
      */
     function generateCodes() {
         if (!checkGenerrator()) {
-            return '';
+            return;
         }
-        let tempCol = wbfcGenerator.generateCodes();
-        return tempCol;
+        wbfcGenerator.generateCodes();
     }
 
     /**
@@ -769,10 +861,30 @@
         return wbfcGenerator.checkDbConnection();
     }
 
-    function appendText(text){
-        console.log("js console append:" + text);
-        if(text){
+    function generatorXml() {
+        if (!checkGenerrator()) {
+            return;
+        }
+        wbfcGenerator.generatorXml();
+    }
+
+    function appendText(text) {
+        //console.log("js console append:" + text);
+        if (text) {
             indexVue.appendText(text);
+        }
+    }
+
+    function setDiyXml(xml){
+        if (xml) {
+            let temp = unescape(xml);
+            indexVue.setDiyXml(temp);
+        }
+    }
+
+    function setGenerateStatus(status){
+        if (status) {
+            indexVue.setGenerateStatus(status);
         }
     }
 </script>

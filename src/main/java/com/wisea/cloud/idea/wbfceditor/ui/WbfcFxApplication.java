@@ -5,6 +5,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.project.Project;
 import com.sun.javafx.webkit.WebConsoleListener;
+import com.wisea.cloud.common.util.ConverterUtil;
 import com.wisea.cloud.idea.wbfceditor.generator.WbfcGenerator;
 import com.wisea.cloud.wbfceditor.generator.util.GeneratorUtil;
 import javafx.application.Application;
@@ -14,6 +15,7 @@ import javafx.concurrent.Worker;
 
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
@@ -27,7 +29,7 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.util.List;
 
-public class WbfcFxApplication extends Application {
+public class WbfcFxApplication extends Application{
 
     public static void main(String[] args) {
         launch(args);
@@ -41,11 +43,19 @@ public class WbfcFxApplication extends Application {
     private static Stage stage = null;
     private static WebEngine webEngine = null;
 
-    public static Stage getStage(){
+    public static Stage getStage() {
         return stage;
     }
+
     public static void setAnActionEvent(AnActionEvent e) {
         currentEvent = e;
+    }
+
+    public static AnActionEvent getAnActionEvent() {
+        if (null != currentEvent) {
+            return currentEvent;
+        }
+        return null;
     }
 
     public static Project getProject() {
@@ -159,21 +169,46 @@ public class WbfcFxApplication extends Application {
         }, true));*/
 
         Scene scene = new Scene(browser, 1300, 800);
+        //设置窗口的图标.
+        primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("/wbfc_editor.png")));
         primaryStage.setTitle("WbfcEditor - Java codes generator");
         primaryStage.setScene(scene);
         primaryStage.show();
 
     }
 
-    public static void hide(){
-        if(null != stage) {
+    public static void hide() {
+        if (null != stage) {
             stage.hide();
         }
     }
 
-    public static void reload(){
-        if(null != webEngine){
+    public static void reload() {
+        if (null != webEngine) {
             webEngine.reload();
+        }
+    }
+
+    public static void appendLog(String text) {
+        if (ConverterUtil.isNotEmpty(webEngine, text)) {
+            Platform.runLater(() -> {
+                webEngine.executeScript("appendText('" + text + "')");
+            });
+        }
+    }
+    public static void setDiyXml(String text) {
+        if (ConverterUtil.isNotEmpty(webEngine, text)) {
+            Platform.runLater(() -> {
+                webEngine.executeScript("setDiyXml('" + text + "')");
+            });
+        }
+    }
+
+    public static void setGenerateStatus(String text) {
+        if (ConverterUtil.isNotEmpty(webEngine, text)) {
+            Platform.runLater(() -> {
+                webEngine.executeScript("setGenerateStatus('" + text + "')");
+            });
         }
     }
 }

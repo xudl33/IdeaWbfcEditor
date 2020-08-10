@@ -1,6 +1,7 @@
 package com.wisea.cloud.idea.wbfceditor.generator;
 
 import com.google.common.base.CaseFormat;
+import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.intellij.credentialStore.OneTimeString;
 import com.intellij.database.access.DatabaseCredentials;
@@ -10,11 +11,14 @@ import com.intellij.database.psi.DbDataSource;
 import com.intellij.database.psi.DbPsiFacade;
 import com.intellij.database.psi.DbTable;
 import com.intellij.database.util.DasUtil;
+import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.application.PathManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.containers.JBIterable;
 import com.intellij.util.ui.classpath.SimpleClasspathElement;
 import com.wisea.cloud.common.mybatis.generator.TableColumn;
-import com.wisea.cloud.common.util.ConverterUtil;
+import com.wisea.cloud.common.util.*;
+import com.wisea.cloud.idea.wbfceditor.ui.TestCharsetApplication;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataColumn;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataTable;
 import com.wisea.cloud.idea.wbfceditor.ui.WbfcFxApplication;
@@ -22,20 +26,21 @@ import com.wisea.cloud.wbfceditor.generator.WbfcEditorGenerator;
 import com.wisea.cloud.wbfceditor.generator.WbfcEditorRunner;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcConfig;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDbInfo;
+import com.wisea.cloud.wbfceditor.generator.logger.WbfcEditorLogger;
 import com.wisea.cloud.wbfceditor.generator.util.GeneratorUtil;
 import org.apache.commons.compress.utils.Lists;
+import org.apache.commons.lang.ArrayUtils;
+import org.mybatis.generator.logging.Log;
+import org.mybatis.generator.logging.LogFactory;
 
-import java.io.File;
-import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.*;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class WbfcGenerator implements WbfcEditorGenerator {
+    private Log logger = LogFactory.getLog(getClass());
     public static Gson gson = new Gson();
 
     public static String case2Name(String name) {
@@ -48,27 +53,41 @@ public class WbfcGenerator implements WbfcEditorGenerator {
     public String getProjectConfig() {
         WbfcConfig conf = GeneratorUtil.getWbfcConfig();
         Project project = WbfcFxApplication.getProject();
-        conf.setControllerPath(project.getBasePath() + File.separator + "src" + File.separator + "main" + File.separator + "java");
-        String projectPackage = "com.wisea." + project.getName();
-        conf.setControllerPackage(projectPackage + ".controller");
+        File workspaceDir = new File(project.getWorkspaceFile().getParent().getPath() + File.separator + "WbfcEditor.tmp");
+        if (workspaceDir.exists()) {
+            try {
+                String[] serStr = IOUtils.readLines(workspaceDir);
+                String serJson = Arrays.stream(serStr).collect(Collectors.joining());
+                WbfcConfig tmpConf = ConverterUtil.gson.fromJson(serJson, WbfcConfig.class);
+                if (ConverterUtil.isNotEmpty(tmpConf)) {
+                    ConverterUtil.copyProperties(tmpConf, conf);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            conf.setControllerPath(project.getBasePath() + File.separator + "src" + File.separator + "main" + File.separator + "java");
+            String projectPackage = "com.wisea." + project.getName();
+            conf.setControllerPackage(projectPackage + ".controller");
 
-        conf.setServicePath(conf.getControllerPath());
-        conf.setServicePackage(projectPackage + ".service");
+            conf.setServicePath(conf.getControllerPath());
+            conf.setServicePackage(projectPackage + ".service");
 
-        conf.setEntityPath(conf.getControllerPath());
-        conf.setEntityPackage(projectPackage + ".entity");
+            conf.setEntityPath(conf.getControllerPath());
+            conf.setEntityPackage(projectPackage + ".entity");
 
-        conf.setPoPath(conf.getControllerPath());
-        conf.setPoPackage(projectPackage + ".po");
+            conf.setPoPath(conf.getControllerPath());
+            conf.setPoPackage(projectPackage + ".po");
 
-        conf.setVoPath(conf.getControllerPath());
-        conf.setVoPackage(projectPackage + ".vo");
+            conf.setVoPath(conf.getControllerPath());
+            conf.setVoPackage(projectPackage + ".vo");
 
-        conf.setDaoPath(conf.getControllerPath());
-        conf.setDaoPackage(projectPackage + ".mapper");
+            conf.setDaoPath(conf.getControllerPath());
+            conf.setDaoPackage(projectPackage + ".mapper");
 
-        conf.setXmlPath(project.getBasePath() + File.separator + "src" + File.separator + "main" + File.separator + "resources");
-        conf.setXmlPackage("mappings");
+            conf.setXmlPath(project.getBasePath() + File.separator + "src" + File.separator + "main" + File.separator + "resources");
+            conf.setXmlPackage("mappings");
+        }
         return gson.toJson(conf);
     }
 
@@ -131,7 +150,8 @@ public class WbfcGenerator implements WbfcEditorGenerator {
                 res.add(colName);
             }
         }
-
+        //logger.debug("logger: getTableColumnOptions is end");
+        //System.out.println("sysout: getTableColumnOptions is end");
         return gson.toJson(res);
     }
 
@@ -145,7 +165,7 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         return "";
     }
 
-    public String checkDbConnection(){
+    public String checkDbConnection() {
         List<DbTable> dbTables = WbfcFxApplication.getTableList();
         DbTable table = dbTables.get(0);
         if (null != table) {
@@ -154,11 +174,11 @@ public class WbfcGenerator implements WbfcEditorGenerator {
             DataSourceStorage storage = DataSourceStorage.getProjectStorage(facade.getProject());
             LocalDataSource localDataSource = storage.getDataSourceById(table.getDataSource().getUniqueId());
             OneTimeString ots = DatabaseCredentials.getInstance().getPassword(localDataSource);
-            if(null == ots){
+            if (null == ots) {
                 return "您的数据库连接没有存储Password,请重新添加密码并保存后再试。";
             }
         }
-       return "success";
+        return "success";
     }
 
     @Override
@@ -178,7 +198,7 @@ public class WbfcGenerator implements WbfcEditorGenerator {
             dbInfo.setDbUser(localDataSource.getUsername());
 
             OneTimeString ots = DatabaseCredentials.getInstance().getPassword(localDataSource);
-            if(null != ots){
+            if (null != ots) {
                 dbInfo.setDbPassword(ots.toString());
             }
 
@@ -224,23 +244,64 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         return res;
     }
 
+    public File getConfigSerialize() {
+        Project project = WbfcFxApplication.getProject();
+        File workspaceDir = new File(project.getWorkspaceFile().getParent().getPath() + File.separator + "WbfcEditor.tmp");
+        return workspaceDir;
+    }
+
     public void saveWbfcConfig(String configStr) {
         if (ConverterUtil.isEmpty(configStr)) return;
         WbfcConfig tempConf = gson.fromJson(configStr, WbfcConfig.class);
         GeneratorUtil.setWbfcConfig(tempConf);
+        String secStr = ConverterUtil.gson.toJson(tempConf);
+        File serFile = getConfigSerialize();
+        try {
+            IOUtils.writeLines(serFile, new String[]{secStr});
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void close() {
         WbfcFxApplication.hide();
     }
 
-    public String generateCodes() {
-        try {
-            WbfcEditorRunner.generatorFiles();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "error";
-        }
-        return "success";
+    public void generateCodes() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String res = "";
+                try {
+                    WbfcEditorRunner.generatorFiles();
+                    res = "success";
+                } catch (Exception e) {
+                    logger.error(Exceptions.getStackTraceAsString(e));
+                    res = "error";
+                }
+                WbfcFxApplication.setGenerateStatus(res);
+            }
+        }).start();
+    }
+
+    public void generatorXml() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String res = "";
+                try {
+                    // 校验并生成配置
+                    WbfcConfig wbfcConfig = GeneratorUtil.beforeGenMakeConfig();
+                    String[] tplArray = IOUtils.readLines(this.getClass().getResourceAsStream("/templates/generatorConfig.ftl"));
+                    // 获取模板
+                    String genConfiTpl = Lists.newArrayList(Arrays.stream(tplArray).iterator()).stream().collect(Collectors.joining("\n"));
+                    // 生成xml
+                    res = FtlManagerUtil.createWithStr(wbfcConfig, genConfiTpl);
+                } catch (Exception e) {
+                    ((WbfcEditorLogger) logger).error(e);
+                }
+                WbfcFxApplication.setDiyXml(ConverterUtil.escape(res));
+            }
+        }).start();
     }
 }

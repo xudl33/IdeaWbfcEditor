@@ -19,7 +19,7 @@
 
     <actions>
         <!-- Add your actions here -->
-        <action id="WbfcEditor" class="com.wisea.cloud.idea.wbfceditor.WbfcEditorAction" text="WbfcEditor">
+        <action id="WbfcEditor" class="com.wisea.cloud.idea.wbfceditor.WbfcEditorAction" text="WbfcEditor" icon="/wbfc_editor.png">
             <add-to-group group-id="DatabaseViewPopupMenu" anchor="first"/>
         </action>
     </actions>
