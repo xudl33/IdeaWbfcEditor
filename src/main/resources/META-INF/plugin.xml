@@ -6,6 +6,15 @@
     <description><![CDATA[
     WbfcEditor - Java codes generator<br>
     <h1>WbfcEditor - Java codes generator</h1><br>
+    <p>本插件依赖Database插件</p>
+    <ol>
+        <li>需要现在DataBase中新建数据源</li>
+        <li>Database窗口中打开对应的数据库</li>
+        <li>单选或多选表</li>
+        <li>右键 -&gt; 弹出菜单选择 WbfcEditor 或 工具条 Tools -&gt; WbfcEditor</li>
+        <li>配置信息</li>
+        <li>生成代码</li>
+    </ol>
     ]]></description>
 
     <!-- please see https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
