@@ -1,9 +1,4 @@
-package com.wisea.cloud.idea.wbfceditor.ui;
-
-
 import com.sun.javafx.webkit.WebConsoleListener;
-import com.wisea.cloud.common.util.ConverterUtil;
-import com.wisea.cloud.idea.wbfceditor.generator.TestGreneator;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Worker;

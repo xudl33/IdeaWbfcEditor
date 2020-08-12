@@ -1,5 +1,4 @@
 import com.wisea.cloud.common.util.FtlManagerUtil;
-import com.wisea.cloud.idea.wbfceditor.generator.TestGreneator;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcConfig;
 
 import java.io.File;

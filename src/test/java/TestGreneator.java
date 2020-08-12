@@ -1,37 +1,18 @@
-package com.wisea.cloud.idea.wbfceditor.generator;
-
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.gson.Gson;
-import com.intellij.credentialStore.OneTimeString;
-import com.intellij.database.access.DatabaseCredentials;
-import com.intellij.database.dataSource.DataSourceStorage;
-import com.intellij.database.dataSource.LocalDataSource;
-import com.intellij.database.psi.DbPsiFacade;
-import com.intellij.database.psi.DbTable;
-import com.intellij.openapi.project.Project;
-import com.wisea.cloud.common.util.ConverterUtil;
-import com.wisea.cloud.common.util.Encodes;
-import com.wisea.cloud.common.util.Exceptions;
-import com.wisea.cloud.idea.wbfceditor.ui.TestCharsetApplication;
-import com.wisea.cloud.wbfceditor.generator.WbfcEditorRunner;
-import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataColumn;
-import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataTable;
 import com.wisea.cloud.idea.wbfceditor.ui.WbfcFxApplication;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcConfig;
-
+import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataTable;
 import org.mybatis.generator.logging.Log;
 import org.mybatis.generator.logging.LogFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 
 public class TestGreneator {
     private Log logger = LogFactory.getLog(getClass());
-//    private Logger logger  = LoggerFactory.getLogger(getClass());
+
+    //    private Logger logger  = LoggerFactory.getLogger(getClass());
     public String getProjectConfig() {
         WbfcConfig conf = new WbfcConfig();
 
@@ -98,8 +79,16 @@ public class TestGreneator {
 
     public boolean isAbsDirectory(String path) {
         File tep = new File(path);
-        // 必须是目录且是绝对路径
-        return tep.isAbsolute() && tep.isDirectory();
+        if (tep.exists()) {
+            // 必须是目录且是绝对路径
+            return tep.isAbsolute() && tep.isDirectory();
+        } else {
+            // 不存在时 不能用isDirectory  根据是否后后缀 有校验是否为目录
+            if (tep.getName().endsWith("./w/d$")) {
+                return false;
+            }
+            return true;
+        }
     }
 
     public void generateCodes() {
@@ -131,7 +120,8 @@ public class TestGreneator {
     public String checkDbConnection() {
         return "success";
     }
-    public void generatorXml(){
+
+    public void generatorXml() {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -144,11 +134,12 @@ public class TestGreneator {
             }
         }).start();
     }
+
     public static String escape(String src) {
         StringBuffer tmp = new StringBuffer();
         tmp.ensureCapacity(src.length() * 6);
 
-        for(int i = 0; i < src.length(); ++i) {
+        for (int i = 0; i < src.length(); ++i) {
             char j = src.charAt(i);
             if (!Character.isDigit(j) && !Character.isLowerCase(j) && !Character.isUpperCase(j)) {
                 if (j < 256) {
