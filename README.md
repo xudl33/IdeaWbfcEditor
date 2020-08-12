@@ -15,6 +15,15 @@ WbfcEditor是一个基于WBFC架构的代码生成器。可以通过DB进行反�
 ## 简介
 原始版为Eclipse插件，本插件为移植版。除了原有WbfcEditor的代码生成功能外(Entity DAO Mapper Service Controller PO VO)，还增加了一些特有的功能，比如【结构精简】【批量 Insert | Update | Delete】【自定义XML】等，这些功能以后会逐渐反向更新到Eclipse的插件当中去。
 
+## 使用
+本插件依赖Database插件。
+1. 需要现在DataBase中新建数据源
+2. Database窗口中打开对应的数据库
+3. 单选或多选表
+4. 右键 -> 弹出菜单选择 WbfcEditor 或 工具条 Tools -> WbfcEditor
+5. 配置信息
+6. 生成代码
+
 ## 功能说明
 默认的生成器会生成Entity和DAO和Mapper.xml文件。
 
