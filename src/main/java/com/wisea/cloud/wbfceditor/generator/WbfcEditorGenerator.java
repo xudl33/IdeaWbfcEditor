@@ -11,4 +11,6 @@ public interface WbfcEditorGenerator {
     public WbfcDbInfo getWbfcDbInfo();
 
     public List<TableColumn> getTableColumn(String tableName);
+
+    public String getWbfcPath();
 }

@@ -34,8 +34,20 @@ public class GeneratorUtil {
     private static Logger logger = LoggerFactory.getLogger(GeneratorUtil.class);
 
     /**
+     * 获取配置路径
+     *
+     * @return
+     */
+    public static String getWbfcConfigPath() {
+        if (null != wbfcEditorGenerator) {
+            return wbfcEditorGenerator.getWbfcPath();
+        }
+        return "";
+    }
+
+    /**
      * 添加JavaDoc
-     * 
+     *
      * @param elem
      * @param doc
      */
@@ -57,7 +69,7 @@ public class GeneratorUtil {
 
     /**
      * 添加JavaDoc
-     * 
+     *
      * @param elem
      * @param doc
      */
@@ -83,25 +95,26 @@ public class GeneratorUtil {
         }
     }
 
-    public static void setWbfcConfig(WbfcConfig conf){
+    public static void setWbfcConfig(WbfcConfig conf) {
         wbfcConfig = conf;
     }
 
-    public static WbfcConfig getWbfcConfig(){
+    public static WbfcConfig getWbfcConfig() {
         return wbfcConfig;
     }
 
-    public static void setWbfcEditorGenerator(WbfcEditorGenerator wbg){
+    public static void setWbfcEditorGenerator(WbfcEditorGenerator wbg) {
         wbfcEditorGenerator = wbg;
         logger.debug("test logger");
     }
-    public static WbfcEditorGenerator getWbfcEditorGenerator(){
+
+    public static WbfcEditorGenerator getWbfcEditorGenerator() {
         return wbfcEditorGenerator;
     }
 
     public static String getTableRemarks(IntrospectedTable introspectedTable) {
         WbfcEditorGenerator gor = getWbfcEditorGenerator();
-        if(null != gor){
+        if (null != gor) {
             String tableName = introspectedTable.getTableConfiguration().getTableName();
             return gor.getTableRemarks(tableName);
         }
@@ -109,16 +122,16 @@ public class GeneratorUtil {
     }
 
     public static void setDbInfo() {
-        if(null != wbfcConfig && null != wbfcEditorGenerator){
+        if (null != wbfcConfig && null != wbfcEditorGenerator) {
             WbfcDbInfo dbInfo = wbfcEditorGenerator.getWbfcDbInfo();
             ConverterUtil.copyProperties(dbInfo, wbfcConfig);
         }
     }
 
-    public static boolean getSimplePoVo(String tableName){
+    public static boolean getSimplePoVo(String tableName) {
         WbfcConfig config = getWbfcConfig();
         WbfcDataTable dataTable = config.getDataTable(tableName);
-        if(null != dataTable){
+        if (null != dataTable) {
             return ConverterUtil.toBoolean(dataTable.getSimplePoVo());
         }
         return false;
@@ -129,7 +142,7 @@ public class GeneratorUtil {
      *
      * @return
      */
-    public static WbfcConfig beforeGenMakeConfig(){
+    public static WbfcConfig beforeGenMakeConfig() {
         // 表
         setDbInfo();
         WbfcConfig wbfcConfig = getWbfcConfig();

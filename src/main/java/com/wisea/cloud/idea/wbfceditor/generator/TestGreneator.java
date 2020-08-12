@@ -61,6 +61,9 @@ public class TestGreneator {
         return new Gson().toJson(conf);
     }
 
+    public void resetConfig() {
+    }
+
     public String getTables() {
         List<WbfcDataTable> res = Lists.newArrayList();
         res.add(new WbfcDataTable("sys_dict", "SysDict"));

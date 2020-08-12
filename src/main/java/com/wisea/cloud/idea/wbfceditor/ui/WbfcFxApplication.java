@@ -170,7 +170,7 @@ public class WbfcFxApplication extends Application{
 
         Scene scene = new Scene(browser, 1300, 800);
         //设置窗口的图标.
-        primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("/wbfc_editor.png")));
+        primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("/icons/icon_16x16.png")));
         primaryStage.setTitle("WbfcEditor - Java codes generator");
         primaryStage.setScene(scene);
         primaryStage.show();

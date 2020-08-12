@@ -11,6 +11,7 @@ import com.intellij.database.psi.DbDataSource;
 import com.intellij.database.psi.DbPsiFacade;
 import com.intellij.database.psi.DbTable;
 import com.intellij.database.util.DasUtil;
+import com.intellij.execution.application.ApplicationConfiguration;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.application.PathManager;
 import com.intellij.openapi.project.Project;
@@ -18,6 +19,7 @@ import com.intellij.util.containers.JBIterable;
 import com.intellij.util.ui.classpath.SimpleClasspathElement;
 import com.wisea.cloud.common.mybatis.generator.TableColumn;
 import com.wisea.cloud.common.util.*;
+import com.wisea.cloud.idea.wbfceditor.setting.WbfcEditorPersistentState;
 import com.wisea.cloud.idea.wbfceditor.ui.TestCharsetApplication;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataColumn;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataTable;
@@ -53,10 +55,11 @@ public class WbfcGenerator implements WbfcEditorGenerator {
     public String getProjectConfig() {
         WbfcConfig conf = GeneratorUtil.getWbfcConfig();
         Project project = WbfcFxApplication.getProject();
-        File workspaceDir = new File(project.getWorkspaceFile().getParent().getPath() + File.separator + "WbfcEditor.tmp");
-        if (workspaceDir.exists()) {
+        String path = getWbfcPath();
+        File tempFile = new File(path + File.separator + "WbfcEditor.tmp");
+        if (tempFile.exists()) {
             try {
-                String[] serStr = IOUtils.readLines(workspaceDir);
+                String[] serStr = IOUtils.readLines(tempFile);
                 String serJson = Arrays.stream(serStr).collect(Collectors.joining());
                 WbfcConfig tmpConf = ConverterUtil.gson.fromJson(serJson, WbfcConfig.class);
                 if (ConverterUtil.isNotEmpty(tmpConf)) {
@@ -244,6 +247,16 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         return res;
     }
 
+    @Override
+    public String getWbfcPath() {
+        Project project = WbfcFxApplication.getProject();
+        String path = ConverterUtil.toString(WbfcEditorPersistentState.getInstance().getPath(), project.getWorkspaceFile().getParent().getPath() + File.separator + "wbfceditor");
+        if (path.endsWith("\\") || path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+        return path;
+    }
+
     public File getConfigSerialize() {
         Project project = WbfcFxApplication.getProject();
         File workspaceDir = new File(project.getWorkspaceFile().getParent().getPath() + File.separator + "WbfcEditor.tmp");
@@ -255,7 +268,7 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         WbfcConfig tempConf = gson.fromJson(configStr, WbfcConfig.class);
         GeneratorUtil.setWbfcConfig(tempConf);
         String secStr = ConverterUtil.gson.toJson(tempConf);
-        File serFile = getConfigSerialize();
+        File serFile = new File(getWbfcPath() + File.separator + "WbfcEditor.tmp");
         try {
             IOUtils.writeLines(serFile, new String[]{secStr});
         } catch (IOException e) {
@@ -303,5 +316,13 @@ public class WbfcGenerator implements WbfcEditorGenerator {
                 WbfcFxApplication.setDiyXml(ConverterUtil.escape(res));
             }
         }).start();
+    }
+
+    public void resetConfig() {
+        String path = getWbfcPath();
+        File tempFile = new File(path + File.separator + "WbfcEditor.tmp");
+        if (tempFile.exists()) {
+            tempFile.delete();
+        }
     }
 }

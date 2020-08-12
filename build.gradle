@@ -1,13 +1,17 @@
 plugins {
     id 'java'
-    id 'org.jetbrains.intellij' version '0.4.21'
+    id 'org.jetbrains.intellij' version '0.4.21' // 由于0.4.21有bug Cannot resolve builtin JBR 11_0_7b765.64. Falling local Java.
 }
 
 group 'com.wisea'
-version '1.0-SNAPSHOT'
+version '1.0.3'
 
 repositories {
     mavenLocal()
+    maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+    maven { url 'https://maven.aliyun.com/repository/google' }
+    maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+    maven { url 'https://maven.aliyun.com/repository/jcenter'}
     mavenCentral()
 }
 
@@ -30,6 +34,12 @@ intellij {
 }
 patchPluginXml {
     changeNotes """
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>"""
+      更新记录<br>
+      <ul>
+        <li>20200812-增加配置路径表单重置功能;优化视觉效果、表单按钮美化；调整图标位置,增加Tools菜单按钮;</li>
+        <li>20200810-增加DiyXml的功能;生成功能全部完成</li>
+        <li>20200731-增加simplePoVo和batchInsert/update/delete相关的代码生成功能；</li>
+        <li>20200727-基本功能移植完成</li>
+      </ul>
+      """
 }

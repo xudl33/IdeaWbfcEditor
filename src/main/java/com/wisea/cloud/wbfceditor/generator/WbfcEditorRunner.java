@@ -5,11 +5,14 @@ import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.impl.GenericNotifierImpl;
 import com.wisea.cloud.common.exception.VerifyException;
 import com.wisea.cloud.common.mybatis.generator.MybatisGeneratorTables;
 import com.wisea.cloud.common.mybatis.generator.TableColumn;
 import com.wisea.cloud.common.util.*;
+import com.wisea.cloud.idea.wbfceditor.setting.WbfcEditorPersistentState;
+import com.wisea.cloud.idea.wbfceditor.ui.WbfcFxApplication;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcColunmOverrideProperty;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcConfig;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataColumn;
@@ -44,17 +47,17 @@ public class WbfcEditorRunner {
 //    private static final Logger logger = LoggerFactory.getLogger(WbfcEditorRunner.class);
 
 
-        public static void generatorFiles() {
+    public static void generatorFiles() {
         LogFactory.setLogFactory(new WbfcLogFactory());
         Logger logger = (Logger) LogFactory.getLog(WbfcEditorRunner.class);
         logger.debug("Start WbfcGenerator... at " + ConverterUtil.dateToString(new Date(), ConverterUtil.FORMATE_DATE_TIME_24H));
         // 校验并生成配置
         WbfcConfig wbfcConfig = GeneratorUtil.beforeGenMakeConfig();
 
-        // 在插件运行目录生成临时文件
-        String rootPath = new File("WbfcEditorTempFiles").getAbsolutePath();
-
-        File newGenerator = new File(rootPath + File.separator + "mybatisGenerator.xml");
+        // 在插件配置目录生成临时文件
+        Project project = WbfcFxApplication.getProject();
+        String path = GeneratorUtil.getWbfcConfigPath();
+        File newGenerator = new File(path + File.separator + "mybatisGenerator.xml");
         IOUtils.createFileParents(newGenerator);
         try {
 

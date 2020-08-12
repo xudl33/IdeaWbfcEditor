@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <title>WbfcEditor - Java codes generator</title>
     <meta name="content-type" content="text/plain; charset=UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <link rel="stylesheet" href="js/element-ui/lib/theme-chalk/index.css">
@@ -60,7 +61,7 @@
 
         .bottom-bar {
             margin: 0px auto;
-            float: none;
+            text-align: center;
         }
 
         .bottom-bar .bottom-bar-btn {
@@ -82,6 +83,15 @@
         .log-loading {
             display: inline-block;
             padding: 2rem 0rem 1rem 0rem;
+        }
+        .footer{
+            font-size: smaller;
+            margin: 0 auto;
+            text-align: center;
+            padding-top: 2rem;
+        }
+        .footer span{
+            display: block;
         }
     </style>
 </head>
@@ -231,7 +241,7 @@
 
         </div>
         <div v-if="active == 3">
-            <div v-if="form.hasXml">
+            <div v-if="form.hasXml == 'true'">
                 <el-input v-loading="genXmlLoading" type="textarea" :autosize="{ minRows: 3, maxRows: 50}" v-model="form.diyXml"></el-input>
             </div>
             <div>
@@ -245,14 +255,18 @@
             </div>
         </div>
         <el-divider></el-divider>
-        <el-row>
-            <el-col :xl="4" :lg="5" class="bottom-bar">
-                <el-button class="bottom-bar-btn" @click="pres" :diabled="generateCodeLoading">上一步</el-button>
-                <el-button v-if="active < 3" class="bottom-bar-btn" @click="next">下一步</el-button>
-                <el-button v-if="active >= 3" class="bottom-bar-btn" @click="confimGen" :diabled="generateCodeLoading">生成</el-button>
-                <el-button v-if="active >= 3" class="bottom-bar-btn" @click="closeWinodow" :diabled="generateCodeLoading">关闭</el-button>
-            </el-col>
-        </el-row>
+        <div class="bottom-bar">
+            <span>
+                <el-button type="warning" class="bottom-bar-btn" v-if="active == 1" @click="reset" :diabled="generateCodeLoading">重置</el-button>
+                <el-button type="success" class="bottom-bar-btn" v-if="active > 1" @click="pres" :diabled="generateCodeLoading">上一步</el-button>
+                <el-button type="success" v-if="active < 3" class="bottom-bar-btn" @click="next">下一步</el-button>
+                <el-button type="primary" v-if="active >= 3" class="bottom-bar-btn" @click="confimGen" :diabled="generateCodeLoading">生成</el-button>
+                <el-button type="danger" v-if="active >= 3" class="bottom-bar-btn" @click="closeWinodow" :diabled="generateCodeLoading">关闭</el-button>
+            </span>
+        </div>
+        <div class="footer">
+            <span>©2020 WbfcEditor - WbfcEditor - Java codes generator</span><span>Author: XuDL(Wisea)</span>
+        </div>
     </div>
     <el-dialog title="编辑" :visible.sync="dialogVisible" :before-close="handleClose" :close-on-click-modal="false">
         <el-form :model="updateForm" label-width="15%" :rules="updateFormFules" ref="updateForm">
@@ -284,7 +298,7 @@
                     <el-switch v-model="updateForm.batchDelete" active-value="true" inactive-value="false"></el-switch>
                     <el-tooltip placement="bottom" effect="light">
                         <div slot="content">
-                            <span>默认的删除方法是伪批量,在Service中使用for循环进行循环操。开启该选项后，将会XML会生成batchDelete函数,Service中也会直接调用batchDelete</span>
+                            <span>默认的删除方法是伪批量,在Service中使用for循环进行循环操做。开启该选项后，将会XML会生成batchDelete函数,Service中也会直接调用batchDelete</span>
                         </div>
                         <el-button type="text" icon="el-icon-question"></el-button>
                     </el-tooltip>
@@ -503,6 +517,10 @@
             }
         },
         methods: {
+            reset() {
+                resetConfig();
+                this.getConfig();
+            },
             next() {
                 //console.log("active = " + this.active);
                 if (this.active <= 1) {
@@ -668,12 +686,19 @@
                 }
             },
             confimGen() {
-                this.$confirm('您确认要按照该配置生成代码(目录会被覆盖生成)?', '提示', {
+                let name = '配置';
+                if('true' == this.form.hasXml){
+                    name = 'XML';
+                }
+                this.$confirm('您要按照该' + name + '生成代码吗？【目录会被覆盖生成】', '提示', {
                     confirmButtonText: '确定',
                     cancelButtonText: '取消',
                     type: 'warning'
                 }).then(() => {
-                    this.generate();
+                    // 避免太快 框没有关闭就出现日志了
+                    setTimeout(() => {
+                        this.generate();
+                    }, 500);
                 }).catch((e) => {
                     if ('cancel' == e) {
                         return;
@@ -886,6 +911,13 @@
         if (status) {
             indexVue.setGenerateStatus(status);
         }
+    }
+
+    function resetConfig() {
+        if (!checkGenerrator()) {
+            return;
+        }
+        wbfcGenerator.resetConfig();
     }
 </script>
 </html>

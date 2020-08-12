@@ -4,7 +4,8 @@
     <vendor email="xudl@wisea@com.cn" url="http://www.wisea.com.cn">Wisea</vendor>
 
     <description><![CDATA[
-    Generator Java Code used wbf-cloud framework<br>
+    WbfcEditor - Java codes generator<br>
+    <h1>WbfcEditor - Java codes generator</h1><br>
     ]]></description>
 
     <!-- please see https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
@@ -15,12 +16,17 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
+        <applicationConfigurable instance="com.wisea.cloud.idea.wbfceditor.ui.WbfcEditorSettingConfigurable"></applicationConfigurable>
+        <applicationService serviceImplementation="com.wisea.cloud.idea.wbfceditor.setting.WbfcEditorPersistentState"></applicationService>
     </extensions>
 
     <actions>
         <!-- Add your actions here -->
-        <action id="WbfcEditor" class="com.wisea.cloud.idea.wbfceditor.WbfcEditorAction" text="WbfcEditor" icon="/wbfc_editor.png">
+        <action id="WbfcEditor" class="com.wisea.cloud.idea.wbfceditor.WbfcEditorAction" text="WbfcEditor" icon="/icons/icon_16x16.png">
             <add-to-group group-id="DatabaseViewPopupMenu" anchor="first"/>
+        </action>
+        <action id="WbfcEditor_Tools" class="com.wisea.cloud.idea.wbfceditor.WbfcEditorAction" text="WbfcEditor" icon="/icons/icon_16x16.png">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
     </actions>
 </idea-plugin>

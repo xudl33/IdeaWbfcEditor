@@ -65,12 +65,12 @@ public class GeneratorTest {
             List<WbfcDataColumn> colList = dTable.getColumns();
             // 在页面中自定义的列属性
             if (colList.size() > 0) {
-                String detailTemplete = WbfcEditorRunner.getColumnOverrideTempletes(colList);
+                String detailTemplete = GeneratorUtil.getColumnOverrideTempletes(colList);
                 tableStrList.add(MybatisGeneratorTables.getTableDom(dTable.getTableName(), dTable.getEntityName(), detailTemplete, false, false, false, false));
             } else {
                 // 默认的列属性
                 List<TableColumn> tableColumnList = GeneratorUtil.getWbfcEditorGenerator().getTableColumn(dTable.getTableName());
-                String detailTemplete = WbfcEditorRunner.getDetailTemple(tableColumnList);
+                String detailTemplete = GeneratorUtil.getDetailTemple(tableColumnList);
                 tableStrList.add(MybatisGeneratorTables.getTableDom(dTable.getTableName(), dTable.getEntityName(), detailTemplete, false, false, false, false));
             }
         }
