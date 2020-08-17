@@ -5,7 +5,7 @@
     <meta name="content-type" content="text/plain; charset=UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <link rel="stylesheet" href="js/element-ui/lib/theme-chalk/index.css">
-    <!--    <link rel="stylesheet" href="css/darcula.css">-->
+<!--    <link rel="stylesheet" href="css/darcula.css">-->
     <script src="js/vue/dist/vue.js"></script>
     <script src="js/element-ui/lib/index.js"></script>
 
@@ -210,16 +210,19 @@
                     <el-form-item label="VO 包名" prop="voPackage">
                         <el-input v-model="form.voPackage"></el-input>
                     </el-form-item>
-                    <el-form-item label="结构简化">
+                    <el-form-item prop="simplePoVo">
+                        <div slot="label">
+                            <span>结构简化</span>
+                            <el-tooltip placement="bottom" effect="light">
+                                <div slot="content">
+                                    <span>开启该选项后，Controller的insert和update会简化成一个saveOrUpdate函数, delete会使用固定的com.wisea.cloud.model.po.LongIdPo</span>
+                                    <br/>
+                                    <span>这里为全局配置，也可以在下一步中对表单独进行配置,精简模式下无法生成【批量新增】和【批量修改】</span>
+                                </div>
+                                <el-button type="text" icon="el-icon-question" class="quick-tooltip"></el-button>
+                            </el-tooltip>
+                        </div>
                         <el-switch v-model="form.simplePoVo" active-value="true" inactive-value="false"></el-switch>
-                        <el-tooltip placement="right" effect="light">
-                            <div slot="content">
-                                <span>开启该选项后，Controller的insert和update会简化成一个saveOrUpdate函数, delete会使用固定的com.wisea.cloud.model.po.LongIdPo</span>
-                                <br/>
-                                <span>这里为全局配置，也可以在下一步中对表单独进行配置,精简模式下无法生成【批量新增】和【批量修改】</span>
-                            </div>
-                            <el-button type="text" icon="el-icon-question"></el-button>
-                        </el-tooltip>
                     </el-form-item>
                 </div>
                 <el-form-item label="Entity 路径" prop="entityPath">
@@ -270,8 +273,13 @@
         </div>
         <div v-if="active == 3">
             <div v-if="form.hasXml == 'true'">
-                <el-input v-loading="genXmlLoading" type="textarea" :autosize="{ minRows: 3, maxRows: 50}"
-                          v-model="form.diyXml"></el-input>
+                <fieldset class="log-console">
+                    <legend>自定义XML</legend>
+                    <div class="log-body">
+                        <el-input v-loading="genXmlLoading" type="textarea" :autosize="{ minRows: 3, maxRows: 50}"
+                                  v-model="form.diyXml"></el-input>
+                    </div>
+                </fieldset>
             </div>
             <div>
                 <fieldset class="log-console">
@@ -310,16 +318,19 @@
             <el-form-item label="映射名" prop="entityName">
                 <el-input v-model="updateForm.entityName" autocomplete="off"></el-input>
             </el-form-item>
-            <el-form-item label="结构简化" v-if="form.simplePoVo == 'false'">
+            <el-form-item v-if="form.simplePoVo == 'false'">
+                <div slot="label">
+                    <span>结构简化</span>
+                    <el-tooltip placement="bottom" effect="light">
+                        <div slot="content">
+                            <span>开启该选项后，Controller的insert和update会简化成一个saveOrUpdate函数, delete会使用固定的com.wisea.cloud.model.po.LongIdPo</span>
+                            <br/>
+                            <span>精简模式下无法生成【批量新增】和【批量修改】</span>
+                        </div>
+                        <el-button type="text" icon="el-icon-question" class="quick-tooltip"></el-button>
+                    </el-tooltip>
+                </div>
                 <el-switch v-model="updateForm.simplePoVo" active-value="true" inactive-value="false"></el-switch>
-                <el-tooltip placement="bottom" effect="light">
-                    <div slot="content">
-                        <span>开启该选项后，Controller的insert和update会简化成一个saveOrUpdate函数, delete会使用固定的com.wisea.cloud.model.po.LongIdPo</span>
-                        <br/>
-                        <span>精简模式下无法生成【批量新增】和【批量修改】</span>
-                    </div>
-                    <el-button type="text" icon="el-icon-question"></el-button>
-                </el-tooltip>
             </el-form-item>
             <div class="pop-tools">
                 <el-form-item label="批量新增" prop="batchInsert" v-if="notSimplePoVo" label-width="50%">
@@ -328,14 +339,17 @@
                 <el-form-item label="批量修改" prop="batchUpdate" v-if="notSimplePoVo" label-width="50%">
                     <el-switch v-model="updateForm.batchUpdate" active-value="true" inactive-value="false"></el-switch>
                 </el-form-item>
-                <el-form-item label="批量删除" prop="batchDelete" label-width="50%">
+                <el-form-item prop="batchDelete" label-width="50%">
+                    <div slot="label">
+                        <span>批量删除</span>
+                        <el-tooltip placement="bottom" effect="light">
+                            <div slot="content">
+                                <span>默认的删除方法是伪批量,在Service中使用for循环进行循环操做。开启该选项后，将会XML会生成batchDelete函数,Service中也会直接调用batchDelete</span>
+                            </div>
+                            <el-button type="text" icon="el-icon-question"></el-button>
+                        </el-tooltip>
+                    </div>
                     <el-switch v-model="updateForm.batchDelete" active-value="true" inactive-value="false"></el-switch>
-                    <el-tooltip placement="bottom" effect="light">
-                        <div slot="content">
-                            <span>默认的删除方法是伪批量,在Service中使用for循环进行循环操做。开启该选项后，将会XML会生成batchDelete函数,Service中也会直接调用batchDelete</span>
-                        </div>
-                        <el-button type="text" icon="el-icon-question"></el-button>
-                    </el-tooltip>
                 </el-form-item>
             </div>
             <el-form-item label="特殊列">
@@ -365,7 +379,7 @@
                                 <span>配置属性</span>
                                 <el-tooltip placement="top" effect="light">
                                     <div slot="content">
-                                        <span>用于手动指定列参数，多个使用逗号分隔 例:aa=yy;bb=nn 更具体语法属性可以参考</span> <a
+                                        <span>用于手动指定列参数，多个使用逗号分隔 例:aa=yy;bb=nn 更具体语法属性可以参考</span> <a class="columns-tips"
                                             href="http://mybatis.org/generator/configreference/columnOverride.html"
                                             target="_blank">http://mybatis.org/generator/configreference/columnOverride.html</a>
                                     </div>
@@ -481,7 +495,7 @@
                     xmlPackage: [{required: true, message: 'XML 包名不能为空', trigger: 'blur'}],
                 },
                 status: [],
-                tableData: [],
+                tableData: [], // {tableName: 'sys', entityName:'sys'}
                 dialogVisible: false,
                 updateForm: {
                     columnList: [],
@@ -660,7 +674,7 @@
             },
             getTables() {
                 let tempTable = getTables();
-                this.$set(this, 'tableData', tempTable);
+               this.$set(this, 'tableData', tempTable);
             },
             getConfig() {
                 let temp = getConfig();
@@ -677,7 +691,7 @@
                     if (tempIndex >= 5) {
                         _this.loading = false;
                         _this.$message.error({
-                            message: "您的IDE不支持本插件，请使用 IntelliJ IDEA 2020.1.3 (Ultimate Edition) 或以上版本",
+                            message: "您的IDEA不支持本插件，请使用 IntelliJ IDEA 2020.1.3 (Ultimate Edition) 或以上版本",
                             duration: 0
                         });
                         if (intv) clearInterval(intv);
