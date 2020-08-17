@@ -28,6 +28,10 @@ WbfcEditor是一个基于WBFC架构的代码生成器。可以通过DB进行反�
 1. 选择发布版本点击进行 [下载](https://github.com/xudl33/IdeaWbfcEditor/releases)
 2. 进入IDEA -> Settings -> Plugins -> 右侧小齿轮 -> Install Plugin from disk -> 选择 WbfcEditor-x.x.x.zip -> 重启IDEA
 
+## 配置
+成功安装了WbfcEditor插件的IDEA Settings -> WbfcEditor 可以进行工作目录的配置。WbfcEditor使用到的缓存和临时文件，都会使用改配置作为工作目录。
+默认值为 `${workspace}/.idea/WbfcEditor`
+
 ## 功能说明
 默认的生成器会生成Entity和DAO和Mapper.xml文件。其他的Java文件根据需要进行配置后可以生成。
 
