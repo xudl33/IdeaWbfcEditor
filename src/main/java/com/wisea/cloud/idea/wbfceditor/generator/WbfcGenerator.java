@@ -12,15 +12,26 @@ import com.intellij.database.psi.DbDataSource;
 import com.intellij.database.psi.DbPsiFacade;
 import com.intellij.database.psi.DbTable;
 import com.intellij.database.util.DasUtil;
+import com.intellij.openapi.actionSystem.ActionManager;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.fileChooser.FileChooser;
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.io.FileUtil;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.containers.JBIterable;
+import com.intellij.util.messages.MessageBus;
 import com.intellij.util.ui.classpath.SimpleClasspathElement;
 import com.wisea.cloud.common.mybatis.generator.TableColumn;
 import com.wisea.cloud.common.util.ConverterUtil;
 import com.wisea.cloud.common.util.Exceptions;
 import com.wisea.cloud.common.util.FtlManagerUtil;
 import com.wisea.cloud.common.util.IOUtils;
+import com.wisea.cloud.idea.wbfceditor.WbfcEditorAction;
+import com.wisea.cloud.idea.wbfceditor.message.OpenFileChooseTopicListener;
 import com.wisea.cloud.idea.wbfceditor.setting.WbfcEditorPersistentState;
+import com.wisea.cloud.idea.wbfceditor.ui.WbfcEditorSettingConfigurable;
 import com.wisea.cloud.idea.wbfceditor.ui.WbfcFxApplication;
 import com.wisea.cloud.wbfceditor.generator.WbfcEditorGenerator;
 import com.wisea.cloud.wbfceditor.generator.WbfcEditorRunner;
@@ -30,7 +41,10 @@ import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataTable;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDbInfo;
 import com.wisea.cloud.wbfceditor.generator.logger.WbfcEditorLogger;
 import com.wisea.cloud.wbfceditor.generator.util.GeneratorUtil;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage;
 import org.apache.commons.compress.utils.Lists;
+import org.apache.commons.io.FilenameUtils;
 import org.mybatis.generator.logging.Log;
 import org.mybatis.generator.logging.LogFactory;
 
@@ -46,6 +60,12 @@ public class WbfcGenerator implements WbfcEditorGenerator {
     private Log logger = LogFactory.getLog(getClass());
     public static Gson gson = new Gson();
 
+    /**
+     * 名称驼峰转换
+     *
+     * @param name
+     * @return
+     */
     public static String case2Name(String name) {
         if (null != name && !"".equals(name)) {
             return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, name);
@@ -53,6 +73,11 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         return "";
     }
 
+    /**
+     * 获取当前项目配置实体
+     *
+     * @return
+     */
     public String getProjectConfig() {
         WbfcConfig conf = GeneratorUtil.getWbfcConfig();
         Project project = WbfcFxApplication.getProject();
@@ -95,12 +120,28 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         return gson.toJson(conf);
     }
 
+    /**
+     * 是否为合法的路径
+     *
+     * @param path
+     * @return
+     */
     public boolean isAbsDirectory(String path) {
         File tep = new File(path);
-        // 必须是目录且是绝对路径
-        return tep.isDirectory() && tep.isAbsolute();
+        if (tep.exists()) {
+            // 必须是目录且是绝对路径
+            return tep.isAbsolute() && tep.isDirectory();
+        } else {
+            // 不存在时 不能用isDirectory  根据是否后后缀 有校验是否为目录
+            return tep.isAbsolute() && ConverterUtil.isEmpty(FilenameUtils.getExtension(tep.getName()));
+        }
     }
 
+    /**
+     * 获取选择的表的列表
+     *
+     * @return
+     */
     public String getTables() {
         List<WbfcDataTable> res = Lists.newArrayList();
         List<DbTable> dbTables = WbfcFxApplication.getTableList();
@@ -110,6 +151,12 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         return gson.toJson(res);
     }
 
+    /**
+     * 通过数据库表名查询DBTable
+     *
+     * @param tableName
+     * @return
+     */
     public DbTable getDbTableByName(String tableName) {
         List<DbTable> dbTables = WbfcFxApplication.getTableList();
         Optional<DbTable> opt = dbTables.stream().filter(n -> n.getName().equals(tableName)).findAny();
@@ -118,6 +165,12 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         return table;
     }
 
+    /**
+     * 获取默认转换的配置列
+     *
+     * @param tableName
+     * @return
+     */
     public String getDefaultColumnList(String tableName) {
         List<WbfcDataColumn> res = new ArrayList<>();
         List<DbTable> dbTables = WbfcFxApplication.getTableList();
@@ -140,6 +193,12 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         return gson.toJson(res);
     }
 
+    /**
+     * 获取表的列名列表
+     *
+     * @param tableName
+     * @return
+     */
     public String getTableColumnOptions(String tableName) {
         List<String> res = new ArrayList<>();
         List<DbTable> dbTables = WbfcFxApplication.getTableList();
@@ -159,6 +218,12 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         return gson.toJson(res);
     }
 
+    /**
+     * 获取表名
+     *
+     * @param tableName
+     * @return
+     */
     @Override
     public String getTableRemarks(String tableName) {
         DbTable table = getDbTableByName(tableName);
@@ -169,6 +234,11 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         return "";
     }
 
+    /**
+     * 校验数据库连接状态
+     *
+     * @return
+     */
     public String checkDbConnection() {
         List<DbTable> dbTables = WbfcFxApplication.getTableList();
         DbTable table = dbTables.get(0);
@@ -185,6 +255,11 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         return "success";
     }
 
+    /**
+     * 获取配置信息实体
+     *
+     * @return
+     */
     @Override
     public WbfcDbInfo getWbfcDbInfo() {
         WbfcDbInfo dbInfo = new WbfcDbInfo();
@@ -248,22 +323,34 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         return res;
     }
 
+    /**
+     * 获取配置文件目录
+     *
+     * @return
+     */
     @Override
     public String getWbfcPath() {
-        Project project = WbfcFxApplication.getProject();
-        String path = ConverterUtil.toString(WbfcEditorPersistentState.getInstance().getPath(), project.getWorkspaceFile().getParent().getPath() + File.separator + "wbfceditor");
-        if (path.endsWith("\\") || path.endsWith("/")) {
-            path = path.substring(0, path.length() - 1);
-        }
-        return path;
+        final String[] path = {null};
+        ApplicationManager.getApplication().invokeLater(() -> {
+            Project project = WbfcFxApplication.getProject();
+            WbfcEditorPersistentState state = WbfcEditorPersistentState.getInstance();
+            String tempPath = "";
+            if(null != state){
+                tempPath = state.getPath();
+            }
+            path[0] = ConverterUtil.toString(state.getPath(), project.getWorkspaceFile().getParent().getPath() + File.separator + "wbfceditor");
+            if (path[0].endsWith("\\") || path[0].endsWith("/")) {
+                path[0] = path[0].substring(0, path[0].length() - 1);
+            }
+        });
+        return path[0];
     }
 
-    public File getConfigSerialize() {
-        Project project = WbfcFxApplication.getProject();
-        File workspaceDir = new File(project.getWorkspaceFile().getParent().getPath() + File.separator + "WbfcEditor.tmp");
-        return workspaceDir;
-    }
-
+    /**
+     * 保存配置文件
+     *
+     * @param configStr
+     */
     public void saveWbfcConfig(String configStr) {
         if (ConverterUtil.isEmpty(configStr)) return;
         WbfcConfig tempConf = gson.fromJson(configStr, WbfcConfig.class);
@@ -277,10 +364,16 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         }
     }
 
+    /**
+     * 关闭APP
+     */
     public void close() {
         WbfcFxApplication.hide();
     }
 
+    /**
+     * 生成代码(异步)
+     */
     public void generateCodes() {
         new Thread(new Runnable() {
             @Override
@@ -298,6 +391,9 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         }).start();
     }
 
+    /**
+     * 生成XML(异步)
+     */
     public void generatorXml() {
         new Thread(new Runnable() {
             @Override
@@ -319,11 +415,94 @@ public class WbfcGenerator implements WbfcEditorGenerator {
         }).start();
     }
 
+    /**
+     * 重置配置文件
+     */
     public void resetConfig() {
         String path = getWbfcPath();
         File tempFile = new File(path + File.separator + "WbfcEditor.tmp");
         if (tempFile.exists()) {
             tempFile.delete();
         }
+    }
+
+    /**
+     * 打开文件选择器
+     *
+     * @param pathName
+     * @param pathVal
+     * @return
+     */
+    public String openChooseFile(String pathName, String pathVal) {
+        File exisFir = null;
+        if(ConverterUtil.isNotEmpty(pathVal)){
+            exisFir = findExistsFile(pathVal);
+        }
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setInitialDirectory(exisFir);
+        directoryChooser.setTitle("选择文件夹");
+        File directory = directoryChooser.showDialog(new Stage());
+        return directory.getAbsolutePath();
+
+//        ApplicationManager.getApplication().invokeLater(() -> {
+//            Project project = WbfcFxApplication.getProject();
+//            if (ConverterUtil.isNotEmpty(pathName)) {
+//                String res = "";
+//                // 默认值
+//                String def = ConverterUtil.toString(pathVal, GeneratorUtil.getWbfcConfigPath());
+//                VirtualFile select = WbfcGenerator.findExistsVirFile(def);
+//                Stage stage = WbfcFxApplication.getStage();
+//                VirtualFile file = FileChooser.chooseFile(FileChooserDescriptorFactory.createSingleFolderDescriptor(), (Project) null, (VirtualFile) select);
+//                if (file != null) {
+//                    res = FileUtil.toSystemDependentName(file.getPath());
+//                    // 转换避免WebView传参问题
+//                    res = ConverterUtil.escape(res);
+//                    // 回填到页面
+//                    WbfcFxApplication.setFormVal(pathName, res);
+//                }
+//            }
+//        });
+
+//        MessageBus messageBus = WbfcFxApplication.getProject().getMessageBus();
+//        messageBus.syncPublisher(OpenFileChooseTopicListener.TOPIC_OPEN_FILE_CHOOSE).openFileChoose(pathName, pathVal);
+    }
+
+
+    /**
+     * 递归查找返回存在的VirtualFile对象
+     *
+     * @param pathVal
+     * @return
+     */
+    public static VirtualFile findExistsVirFile(String pathVal) {
+        VirtualFile exVf = null;
+        if (ConverterUtil.isNotEmpty(pathVal)) {
+            File pathFile = new File(pathVal);
+            if (pathFile.exists()) {
+                exVf = LocalFileSystem.getInstance().findFileByIoFile(pathFile);
+            } else {
+                exVf = findExistsVirFile(pathFile.getParent());
+            }
+        }
+        return exVf;
+    }
+
+    /**
+     * 递归查找返回存在的File对象
+     *
+     * @param pathVal
+     * @return
+     */
+    public static File findExistsFile(String pathVal) {
+        File exVf = null;
+        if (ConverterUtil.isNotEmpty(pathVal)) {
+            File pathFile = new File(pathVal);
+            if (pathFile.exists()) {
+                exVf = pathFile;
+            } else {
+                exVf = findExistsFile(pathFile.getParent());
+            }
+        }
+        return exVf;
     }
 }

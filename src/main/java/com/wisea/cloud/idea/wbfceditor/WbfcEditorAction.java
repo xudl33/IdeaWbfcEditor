@@ -4,6 +4,7 @@ import com.intellij.database.psi.DbTable;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.LangDataKeys;
+import com.intellij.openapi.fileChooser.FileChooserDialog;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.psi.PsiElement;
 import com.wisea.cloud.idea.wbfceditor.constants.Constants;
@@ -13,16 +14,29 @@ import javafx.application.Platform;
 import javafx.stage.Stage;
 import org.apache.commons.compress.utils.Lists;
 
-import java.net.MalformedURLException;
+import javax.swing.*;
 import java.util.List;
 
 
 public class WbfcEditorAction extends AnAction {
 
+    public static final String ACTION_ID = "com.wisea.cloud.idea.wbfceditor.WbfcEditorAction";
+
+    protected FileChooserDialog chooser = null;
+
+    private AnActionEvent actionEvent;
+
+    public AnActionEvent getActionEvent() {
+        return actionEvent;
+    }
+
+    public void setActionEvent(AnActionEvent actionEvent) {
+        this.actionEvent = actionEvent;
+    }
 
     @Override
     public void actionPerformed(AnActionEvent e) {
-
+        this.actionEvent = e;
 //    // 获取工程上下文
 //        Project project = e.getData(PlatformDataKeys.PROJECT);
 //// 获取当前类文件
@@ -43,10 +57,10 @@ public class WbfcEditorAction extends AnAction {
         List<DbTable> tableList = Lists.newArrayList();
         for (PsiElement psiElement : psiElements) {
             if (!(psiElement instanceof DbTable)) {
-                Messages.showMessageDialog("所选择的必须是【表】类型", Constants.TITLE_NOTICE,  Messages.getInformationIcon());
+                Messages.showMessageDialog("所选择的必须是【表】类型", Constants.TITLE_NOTICE, Messages.getInformationIcon());
                 return;
             } else {
-                tableList.add((DbTable)psiElement);
+                tableList.add((DbTable) psiElement);
             }
         }
 
@@ -58,7 +72,7 @@ public class WbfcEditorAction extends AnAction {
             @Override
             public void run() {
                 Stage stage = WbfcFxApplication.getStage();
-                if(null == stage){
+                if (null == stage) {
                     Application.launch(WbfcFxApplication.class);
                 } else {
                     Platform.runLater(new Runnable() {
@@ -73,9 +87,17 @@ public class WbfcEditorAction extends AnAction {
             }
         }).start();
 
+//        Project project = e.getData(PlatformDataKeys.PROJECT);
+//        // 注册打开文件选择窗口
+//        MessageBus messageBus = project.getMessageBus();
+//        MessageBusConnection connection = messageBus.connect();
+//        connection.subscribe(OpenFileChooseTopicListener.TOPIC_OPEN_FILE_CHOOSE, new OpenFileChooseTopicImpl());
+
+//        WbfcEditorDialog dialog = new WbfcEditorDialog(project);
+//        dialog.setUndecorated(false);
+//        dialog.show();
+
+
     }
-
-
-
 
 }

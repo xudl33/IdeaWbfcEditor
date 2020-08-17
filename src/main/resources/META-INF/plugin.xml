@@ -29,12 +29,19 @@
         <applicationService serviceImplementation="com.wisea.cloud.idea.wbfceditor.setting.WbfcEditorPersistentState"></applicationService>
     </extensions>
 
+    <!--    <projectListeners>-->
+    <!--        <listener class="com.wisea.cloud.idea.wbfceditor.message.OpenFileChooseTopicListener"-->
+    <!--                  topic="com.wisea.cloud.idea.wbfceditor.message.OpenFileChooseTopicListener" />-->
+    <!--    </projectListeners>-->
+
     <actions>
         <!-- Add your actions here -->
-        <action id="WbfcEditor" class="com.wisea.cloud.idea.wbfceditor.WbfcEditorAction" text="WbfcEditor" icon="/icons/icon_16x16.png">
+        <action id="com.wisea.cloud.idea.wbfceditor.WbfcEditorAction"
+                class="com.wisea.cloud.idea.wbfceditor.WbfcEditorAction" text="WbfcEditor" icon="/icons/icon_16x16.png">
             <add-to-group group-id="DatabaseViewPopupMenu" anchor="first"/>
         </action>
-        <action id="WbfcEditor_Tools" class="com.wisea.cloud.idea.wbfceditor.WbfcEditorAction" text="WbfcEditor" icon="/icons/icon_16x16.png">
+        <action id="com.wisea.cloud.idea.wbfceditor.WbfcEditorTools"
+                class="com.wisea.cloud.idea.wbfceditor.WbfcEditorAction" text="WbfcEditor" icon="/icons/icon_16x16.png">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
     </actions>

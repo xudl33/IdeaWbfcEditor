@@ -5,8 +5,10 @@
     <meta name="content-type" content="text/plain; charset=UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <link rel="stylesheet" href="js/element-ui/lib/theme-chalk/index.css">
+    <!--    <link rel="stylesheet" href="css/darcula.css">-->
     <script src="js/vue/dist/vue.js"></script>
     <script src="js/element-ui/lib/index.js"></script>
+
     <style scoped>
         html, body {
             width: 100%;
@@ -34,7 +36,7 @@
         }
 
         .tool-group {
-            border-bottom: 1px solid #DCDFE6;
+            border-bottom: 1px solid #dcdfe6;
             margin-bottom: 15px;
         }
 
@@ -72,25 +74,30 @@
             border: 1px solid #DCDFE6;
             min-height: 10rem;
         }
+
         .log-body {
             max-height: 20rem;
             overflow-y: auto;
         }
+
         .log-content {
             display: block;
             word-break: break-word;
         }
+
         .log-loading {
             display: inline-block;
             padding: 2rem 0rem 1rem 0rem;
         }
-        .footer{
+
+        .footer {
             font-size: smaller;
             margin: 0 auto;
             text-align: center;
             padding-top: 2rem;
         }
-        .footer span{
+
+        .footer span {
             display: block;
         }
     </style>
@@ -164,7 +171,10 @@
                 </div>
                 <div v-if="'true' == form.hasController" class="tool-group">
                     <el-form-item label="Controller 路径" prop="controllerPath">
-                        <el-input v-model="form.controllerPath"></el-input>
+                        <el-input v-model="form.controllerPath">
+                            <el-button slot="append" icon="el-icon-folder-opened"
+                                       @click="chooseFile('controllerPath')"></el-button>
+                        </el-input>
                     </el-form-item>
                     <el-form-item label="Controller 包名" prop="controllerPackage">
                         <el-input v-model="form.controllerPackage"></el-input>
@@ -172,7 +182,10 @@
                 </div>
                 <div v-if="'true' == form.hasService" class="tool-group">
                     <el-form-item label="Service 路径" prop="servicePath">
-                        <el-input v-model="form.servicePath"></el-input>
+                        <el-input v-model="form.servicePath">
+                            <el-button slot="append" icon="el-icon-folder-opened"
+                                       @click="chooseFile('servicePath')"></el-button>
+                        </el-input>
                     </el-form-item>
                     <el-form-item label="Service 包名" prop="servicePackage">
                         <el-input v-model="form.servicePackage"></el-input>
@@ -180,13 +193,19 @@
                 </div>
                 <div v-if="'true' == form.hasPoVo" class="tool-group">
                     <el-form-item label="PO 路径" prop="poPath">
-                        <el-input v-model="form.poPath"></el-input>
+                        <el-input v-model="form.poPath">
+                            <el-button slot="append" icon="el-icon-folder-opened"
+                                       @click="chooseFile('poPath')"></el-button>
+                        </el-input>
                     </el-form-item>
                     <el-form-item label="PO 包名" prop="poPackage">
                         <el-input v-model="form.poPackage"></el-input>
                     </el-form-item>
                     <el-form-item label="VO 路径" prop="voPath">
-                        <el-input v-model="form.voPath"></el-input>
+                        <el-input v-model="form.voPath">
+                            <el-button slot="append" icon="el-icon-folder-opened"
+                                       @click="chooseFile('voPath')"></el-button>
+                        </el-input>
                     </el-form-item>
                     <el-form-item label="VO 包名" prop="voPackage">
                         <el-input v-model="form.voPackage"></el-input>
@@ -204,19 +223,28 @@
                     </el-form-item>
                 </div>
                 <el-form-item label="Entity 路径" prop="entityPath">
-                    <el-input v-model="form.entityPath"></el-input>
+                    <el-input v-model="form.entityPath">
+                        <el-button slot="append" icon="el-icon-folder-opened"
+                                   @click="chooseFile('entityPath')"></el-button>
+                    </el-input>
                 </el-form-item>
                 <el-form-item label="Entity 包名" prop="entityPackage">
                     <el-input v-model="form.entityPackage"></el-input>
                 </el-form-item>
                 <el-form-item label="DAO 路径" prop="daoPath">
-                    <el-input v-model="form.daoPath"></el-input>
+                    <el-input v-model="form.daoPath">
+                        <el-button slot="append" icon="el-icon-folder-opened"
+                                   @click="chooseFile('daoPath')"></el-button>
+                    </el-input>
                 </el-form-item>
                 <el-form-item label="DAO 包名" prop="daoPackage">
                     <el-input v-model="form.daoPackage"></el-input>
                 </el-form-item>
                 <el-form-item label="XML 路径" prop="xmlPath">
-                    <el-input v-model="form.xmlPath"></el-input>
+                    <el-input v-model="form.xmlPath">
+                        <el-button slot="append" icon="el-icon-folder-opened"
+                                   @click="chooseFile('xmlPath')"></el-button>
+                    </el-input>
                 </el-form-item>
                 <el-form-item label="XML 包名" prop="xmlPackage">
                     <el-input v-model="form.xmlPackage" placeholder="mappings"></el-input>
@@ -242,13 +270,15 @@
         </div>
         <div v-if="active == 3">
             <div v-if="form.hasXml == 'true'">
-                <el-input v-loading="genXmlLoading" type="textarea" :autosize="{ minRows: 3, maxRows: 50}" v-model="form.diyXml"></el-input>
+                <el-input v-loading="genXmlLoading" type="textarea" :autosize="{ minRows: 3, maxRows: 50}"
+                          v-model="form.diyXml"></el-input>
             </div>
             <div>
                 <fieldset class="log-console">
                     <legend>Generator Log Console</legend>
                     <div class="log-body">
-                        <span class="log-content" v-for="(item, index) in status" :key="'log_' + index"> {{item}} </span>
+                        <span class="log-content" v-for="(item, index) in status"
+                              :key="'log_' + index"> {{item}} </span>
                         <div class="log-loading" v-if="generateCodeLoading" v-loading="true"></div>
                     </div>
                 </fieldset>
@@ -257,11 +287,15 @@
         <el-divider></el-divider>
         <div class="bottom-bar">
             <span>
-                <el-button type="warning" class="bottom-bar-btn" v-if="active == 1" @click="reset" :diabled="generateCodeLoading">重置</el-button>
-                <el-button type="success" class="bottom-bar-btn" v-if="active > 1" @click="pres" :diabled="generateCodeLoading">上一步</el-button>
+                <el-button type="warning" class="bottom-bar-btn" v-if="active == 1" @click="reset"
+                           :diabled="generateCodeLoading">重置</el-button>
+                <el-button type="success" class="bottom-bar-btn" v-if="active > 1" @click="pres"
+                           :diabled="generateCodeLoading">上一步</el-button>
                 <el-button type="success" v-if="active < 3" class="bottom-bar-btn" @click="next">下一步</el-button>
-                <el-button type="primary" v-if="active >= 3" class="bottom-bar-btn" @click="confimGen" :diabled="generateCodeLoading">生成</el-button>
-                <el-button type="danger" v-if="active >= 3" class="bottom-bar-btn" @click="closeWinodow" :diabled="generateCodeLoading">关闭</el-button>
+                <el-button type="primary" v-if="active >= 3" class="bottom-bar-btn" @click="confimGen"
+                           :diabled="generateCodeLoading">生成</el-button>
+                <el-button type="danger" v-if="active >= 3" class="bottom-bar-btn" @click="closeWinodow"
+                           :diabled="generateCodeLoading">关闭</el-button>
             </span>
         </div>
         <div class="footer">
@@ -543,7 +577,7 @@
                 }
             },
             pres() {
-                if (this.active>= 3) {
+                if (this.active >= 3) {
                     this.form.diyXml = null;
                     this.$set(this, 'status', []);
                 }
@@ -687,7 +721,7 @@
             },
             confimGen() {
                 let name = '配置';
-                if('true' == this.form.hasXml){
+                if ('true' == this.form.hasXml) {
                     name = 'XML';
                 }
                 this.$confirm('您要按照该' + name + '生成代码吗？【目录会被覆盖生成】', '提示', {
@@ -735,17 +769,25 @@
             appendText(text) {
                 if (text) this.status.push(text);
             },
-            setDiyXml(xml){
+            setDiyXml(xml) {
                 this.genXmlLoading = false;
                 this.form.diyXml = xml;
             },
-            setGenerateStatus(status){
+            setGenerateStatus(status) {
                 this.generateCodeLoading = false;
-                if('success' == status){
+                if ('success' == status) {
                     this.$alert('生成成功');
                 } else {
                     this.$alert('生成失败,请到控制台查看错误日志');
                 }
+            },
+            chooseFile(pathName) {
+                let pathVal = this.form[pathName];
+                let choosePath = openChooseFile(pathName, pathVal);
+                this.form[pathName] = choosePath;
+            },
+            setFormVal(name, val) {
+                this.form[name] = val;
             }
         },
 
@@ -900,14 +942,14 @@
         }
     }
 
-    function setDiyXml(xml){
+    function setDiyXml(xml) {
         if (xml) {
             let temp = unescape(xml);
             indexVue.setDiyXml(temp);
         }
     }
 
-    function setGenerateStatus(status){
+    function setGenerateStatus(status) {
         if (status) {
             indexVue.setGenerateStatus(status);
         }
@@ -918,6 +960,20 @@
             return;
         }
         wbfcGenerator.resetConfig();
+    }
+
+    function openChooseFile(pathName, pathVal) {
+        if (!checkGenerrator()) {
+            return '';
+        }
+        return wbfcGenerator.openChooseFile(pathName, pathVal);
+    }
+
+    function setFormVal(name, val) {
+        if (name) {
+            let temp = unescape(val);
+            indexVue.setFormVal(name, temp);
+        }
     }
 </script>
 </html>

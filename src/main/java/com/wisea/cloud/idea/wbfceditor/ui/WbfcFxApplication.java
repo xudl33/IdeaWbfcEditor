@@ -1,9 +1,13 @@
 package com.wisea.cloud.idea.wbfceditor.ui;
 
 import com.intellij.database.psi.DbTable;
+import com.intellij.ide.ui.LafManager;
+import com.intellij.ide.ui.UIThemeProvider;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.project.Project;
+import com.intellij.util.ui.StartupUiUtil;
+import com.sun.javafx.css.StyleManager;
 import com.sun.javafx.webkit.WebConsoleListener;
 import com.wisea.cloud.common.util.ConverterUtil;
 import com.wisea.cloud.idea.wbfceditor.generator.WbfcGenerator;
@@ -12,10 +16,12 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
-
+import javafx.embed.swing.SwingNode;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
@@ -24,12 +30,19 @@ import netscape.javascript.JSObject;
 import org.apache.commons.compress.utils.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
-import java.io.*;
+import javax.swing.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.util.List;
 
-public class WbfcFxApplication extends Application{
+public class WbfcFxApplication extends Application {
 
     public static void main(String[] args) {
         launch(args);
@@ -102,6 +115,7 @@ public class WbfcFxApplication extends Application{
     public void start(Stage primaryStage) throws MalformedURLException {
         this.stage = primaryStage;
         GeneratorUtil.setWbfcEditorGenerator(WbfcGenerator);
+
         //primaryStage.setAlwaysOnTop(true);
 
         // the wumpus doesn't leave when the last stage is hidden.
@@ -114,8 +128,9 @@ public class WbfcFxApplication extends Application{
         webEngine.getLoadWorker().stateProperty().addListener(
                 (ObservableValue<? extends Worker.State> ov, Worker.State oldState,
                  Worker.State newState) -> {
-
                     if (newState == Worker.State.SUCCEEDED) {
+                        // 设置风格
+                        setTheme();
                         JSObject win = (JSObject) webEngine.executeScript("window");
                         win.setMember("wbfcGenerator", WbfcGenerator
                         );//设置变量
@@ -168,13 +183,66 @@ public class WbfcFxApplication extends Application{
             }
         }, true));*/
 
+//        final SwingNode swingNode = new SwingNode();
+//        createAndSetSwingContent(swingNode);
+//        StackPane stackPane = new StackPane();
+//        stackPane.getChildren().addAll(swingNode, browser);
         Scene scene = new Scene(browser, 1300, 800);
+        // 如果是暗黑风格就使用暗黑css
+//        if (cssName.equalsIgnoreCase("Darcula")) {
+//            // webEngine.setUserStyleSheetLocation(cssFile);
+////            try {
+//            Document doc = webEngine.getDocument();
+//            Element node = doc.createElement("link");
+//            node.setAttribute("type", "text/css");
+//            node.setAttribute("rel", "stylesheet");
+//            node.setAttribute("href", "css/darcula.css");
+//            doc.getDocumentElement().getElementsByTagName("head").item(0).appendChild(node);
+//
+////            webEngine.getDocument().createElement()
+////            browser.getStylesheets().setAll(getClass().getResource("/templates/css/darcula.css").toString());
+//            //webEngine.setUserStyleSheetLocation(getClass().getResource("/templates/css/darcula.css").toString());
+////            browser.getStylesheets();
+////            browser.getStylesheets().addAll("css/darcula.css");
+//            //StyleManager.loadStylesheet("/templates/css/" + cssName + ".css");
+//            //StyleManager.getInstance().addUserAgentStylesheet(scene, "/templates/css/" + cssName + ".css");
+////                String cssFile = new File(getClass().getResource("/templates/css/" + cssName + ".css").toURI()).toURI().toURL().toString();
+////                cssFile = cssFile.replace("file://", "file:///");
+//            //scene.getStylesheets().addAll("templates/);
+////            } catch (URISyntaxException e) {
+////                e.printStackTrace();
+////            }
+//        }
         //设置窗口的图标.
         primaryStage.getIcons().add(new Image(this.getClass().getResourceAsStream("/icons/icon_16x16.png")));
         primaryStage.setTitle("WbfcEditor - Java codes generator");
         primaryStage.setScene(scene);
         primaryStage.show();
+    }
 
+    public static void setTheme() {
+        if (null != webEngine) {
+            UIManager.LookAndFeelInfo info = LafManager.getInstance().getCurrentLookAndFeel();
+            String cssName = info.getName().toLowerCase();
+            // 如果是暗黑风格就使用暗黑css
+            if (StartupUiUtil.isUnderDarcula()) {
+                Document doc = webEngine.getDocument();
+                Element node = doc.createElement("link");
+                node.setAttribute("type", "text/css");
+                node.setAttribute("rel", "stylesheet");
+                node.setAttribute("href", "css/darcula.css");
+                doc.getDocumentElement().getElementsByTagName("head").item(0).appendChild(node);
+            }
+        }
+    }
+
+    private void createAndSetSwingContent(final SwingNode swingNode) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                swingNode.setContent(new JButton("Click me!"));
+            }
+        });
     }
 
     public static void hide() {
@@ -185,30 +253,38 @@ public class WbfcFxApplication extends Application{
 
     public static void reload() {
         if (null != webEngine) {
+            setTheme();
             webEngine.reload();
         }
     }
 
     public static void appendLog(String text) {
         if (ConverterUtil.isNotEmpty(webEngine, text)) {
-            Platform.runLater(() -> {
-                webEngine.executeScript("appendText('" + text + "')");
-            });
+            doScript("appendText('" + text + "')");
         }
     }
+
     public static void setDiyXml(String text) {
         if (ConverterUtil.isNotEmpty(webEngine, text)) {
-            Platform.runLater(() -> {
-                webEngine.executeScript("setDiyXml('" + text + "')");
-            });
+            doScript("setDiyXml('" + text + "')");
         }
     }
 
     public static void setGenerateStatus(String text) {
         if (ConverterUtil.isNotEmpty(webEngine, text)) {
-            Platform.runLater(() -> {
-                webEngine.executeScript("setGenerateStatus('" + text + "')");
-            });
+            doScript("setGenerateStatus('" + text + "')");
         }
+    }
+
+    public static void setFormVal(String name, String val) {
+        if (ConverterUtil.isNotEmpty(webEngine, name)) {
+            doScript("setFormVal('" + name + "', '" + val + "')");
+        }
+    }
+
+    public static void doScript(String javascriptCmd) {
+        Platform.runLater(() -> {
+            webEngine.executeScript(javascriptCmd);
+        });
     }
 }

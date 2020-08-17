@@ -6,6 +6,7 @@ import com.wisea.cloud.common.mybatis.generator.MybatisGeneratorTables;
 import com.wisea.cloud.common.mybatis.generator.TableColumn;
 import com.wisea.cloud.common.util.ConverterUtil;
 import com.wisea.cloud.common.util.DataCheckUtil;
+import com.wisea.cloud.common.util.IOUtils;
 import com.wisea.cloud.wbfceditor.generator.WbfcEditorGenerator;
 import com.wisea.cloud.wbfceditor.generator.entity.*;
 import org.mybatis.generator.api.IntrospectedTable;
@@ -168,6 +169,29 @@ public class GeneratorUtil {
         wbfcConfig.setTablesList(tableStrList);
 
         return wbfcConfig;
+    }
+
+    public static void makeAllPathDirs(WbfcConfig wbfc) {
+        if (ConverterUtil.toBoolean(wbfc.getHasController())) {
+            File cp = new File(wbfc.getControllerPath());
+            IOUtils.createFileParents(cp);
+        }
+        if (ConverterUtil.toBoolean(wbfc.getHasService())) {
+            File sp = new File(wbfc.getServicePath());
+            IOUtils.createFileParents(sp);
+        }
+        if (ConverterUtil.toBoolean(wbfc.getHasPoVo())) {
+            File pp = new File(wbfc.getPoPath());
+            IOUtils.createFileParents(pp);
+            File vp = new File(wbfc.getVoPath());
+            IOUtils.createFileParents(vp);
+        }
+        File ep = new File(wbfc.getEntityPath());
+        IOUtils.createFileParents(ep);
+        File dp = new File(wbfc.getDaoPath());
+        IOUtils.createFileParents(dp);
+        File xp = new File(wbfc.getXmlPath());
+        IOUtils.createFileParents(xp);
     }
 
 

@@ -53,7 +53,8 @@ public class WbfcEditorRunner {
         logger.debug("Start WbfcGenerator... at " + ConverterUtil.dateToString(new Date(), ConverterUtil.FORMATE_DATE_TIME_24H));
         // 校验并生成配置
         WbfcConfig wbfcConfig = GeneratorUtil.beforeGenMakeConfig();
-
+        // 校验文件生成目录
+        GeneratorUtil.makeAllPathDirs(wbfcConfig);
         // 在插件配置目录生成临时文件
         Project project = WbfcFxApplication.getProject();
         String path = GeneratorUtil.getWbfcConfigPath();

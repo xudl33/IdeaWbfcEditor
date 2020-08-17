@@ -8,9 +8,12 @@ import com.intellij.openapi.options.SearchableConfigurable;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectUtil;
 import com.intellij.openapi.util.io.FileUtil;
+import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.components.fields.ExtendableTextField;
+import com.wisea.cloud.common.util.ConverterUtil;
+import com.wisea.cloud.idea.wbfceditor.generator.WbfcGenerator;
 import com.wisea.cloud.idea.wbfceditor.setting.WbfcEditorPersistentState;
 import com.wisea.cloud.wbfceditor.generator.util.GeneratorUtil;
 import org.jetbrains.annotations.Nls;
@@ -59,8 +62,8 @@ public class WbfcEditorSettingConfigurable implements SearchableConfigurable {
         if (null != project) {
             VirtualFile virtualFile = project.getWorkspaceFile();
             if (null != virtualFile) {
-                String path = GeneratorUtil.getWbfcConfigPath();
-                pathField.setText(path);
+                String defPath = ConverterUtil.toString(storeState.getPath(), GeneratorUtil.getWbfcConfigPath());
+                pathField.setText(defPath);
             }
         }
 //        pathField.setTextToTriggerEmptyTextStatus("Default");
@@ -71,7 +74,9 @@ public class WbfcEditorSettingConfigurable implements SearchableConfigurable {
     }
 
     private void showDialog() {
-        VirtualFile file = FileChooser.chooseFile(FileChooserDescriptorFactory.createSingleFolderDescriptor(), (Project) null, (VirtualFile) null);
+        String defPath = ConverterUtil.toString(storeState.getPath(), GeneratorUtil.getWbfcConfigPath());
+        VirtualFile select = WbfcGenerator.findExistsVirFile(defPath);
+        VirtualFile file = FileChooser.chooseFile(FileChooserDescriptorFactory.createSingleFolderDescriptor(), (Project) null, (VirtualFile) select);
         if (file != null) {
             pathField.setText(FileUtil.toSystemDependentName(file.getPath()) + File.separator + "wbfceditor");
         }
@@ -85,5 +90,9 @@ public class WbfcEditorSettingConfigurable implements SearchableConfigurable {
     @Override
     public void apply() throws ConfigurationException {
         storeState.setPath(pathField.getText());
+    }
+
+    public String getPath() {
+        return storeState.getPath();
     }
 }

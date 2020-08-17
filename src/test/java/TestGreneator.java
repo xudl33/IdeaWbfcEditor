@@ -1,8 +1,12 @@
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import com.wisea.cloud.common.util.ConverterUtil;
 import com.wisea.cloud.idea.wbfceditor.ui.WbfcFxApplication;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcConfig;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataTable;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage;
+import org.apache.commons.io.FilenameUtils;
 import org.mybatis.generator.logging.Log;
 import org.mybatis.generator.logging.LogFactory;
 
@@ -84,10 +88,7 @@ public class TestGreneator {
             return tep.isAbsolute() && tep.isDirectory();
         } else {
             // 不存在时 不能用isDirectory  根据是否后后缀 有校验是否为目录
-            if (tep.getName().endsWith("./w/d$")) {
-                return false;
-            }
-            return true;
+            return tep.isAbsolute() && ConverterUtil.isEmpty(FilenameUtils.getExtension(tep.getName()));
         }
     }
 
@@ -159,5 +160,36 @@ public class TestGreneator {
         }
 
         return tmp.toString();
+    }
+
+    public String openChooseFile(String pathName, String pathVal) {
+        File exisFir = null;
+        if (ConverterUtil.isNotEmpty(pathVal)) {
+            exisFir = findExistsFile(pathVal);
+        }
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setInitialDirectory(exisFir);
+        directoryChooser.setTitle("请选择");
+        File directory = directoryChooser.showDialog(new Stage());
+        return directory.getAbsolutePath();
+    }
+
+    /**
+     * 递归查找返回存在的File对象
+     *
+     * @param pathVal
+     * @return
+     */
+    public static File findExistsFile(String pathVal) {
+        File exVf = null;
+        if (null != pathVal && !"".equals(pathVal)) {
+            File pathFile = new File(pathVal);
+            if (pathFile.exists()) {
+                exVf = pathFile;
+            } else {
+                exVf = findExistsFile(pathFile.getParent());
+            }
+        }
+        return exVf;
     }
 }
