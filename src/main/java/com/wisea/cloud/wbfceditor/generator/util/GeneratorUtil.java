@@ -171,27 +171,39 @@ public class GeneratorUtil {
         return wbfcConfig;
     }
 
+    public static void createDir(File f) {
+        if (!f.exists()) {
+            // 如果是绝对地址就获取父目录并创建
+            if (f.isAbsolute()) {
+                f.mkdirs();
+            } else {
+                // 如果是相对目录就获取绝对地址转换一下
+                new File(f.getAbsolutePath()).mkdirs();
+            }
+        }
+    }
+
     public static void makeAllPathDirs(WbfcConfig wbfc) {
         if (ConverterUtil.toBoolean(wbfc.getHasController())) {
             File cp = new File(wbfc.getControllerPath());
-            IOUtils.createFileParents(cp);
+            createDir(cp);
         }
         if (ConverterUtil.toBoolean(wbfc.getHasService())) {
             File sp = new File(wbfc.getServicePath());
-            IOUtils.createFileParents(sp);
+            createDir(sp);
         }
         if (ConverterUtil.toBoolean(wbfc.getHasPoVo())) {
             File pp = new File(wbfc.getPoPath());
-            IOUtils.createFileParents(pp);
+            createDir(pp);
             File vp = new File(wbfc.getVoPath());
-            IOUtils.createFileParents(vp);
+            createDir(vp);
         }
         File ep = new File(wbfc.getEntityPath());
-        IOUtils.createFileParents(ep);
+        createDir(ep);
         File dp = new File(wbfc.getDaoPath());
-        IOUtils.createFileParents(dp);
+        createDir(dp);
         File xp = new File(wbfc.getXmlPath());
-        IOUtils.createFileParents(xp);
+        createDir(xp);
     }
 
 

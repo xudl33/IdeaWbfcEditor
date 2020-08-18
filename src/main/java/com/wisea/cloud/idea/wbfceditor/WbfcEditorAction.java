@@ -66,11 +66,16 @@ public class WbfcEditorAction extends AnAction {
 
         boolean isSingleTable = psiElements.length == 1;
         //new MainUI(e, isSingleTable);
-        WbfcFxApplication.setAnActionEvent(e);
-        WbfcFxApplication.setTableList(tableList);
+
         new Thread(new Runnable() {
             @Override
             public void run() {
+                // the wumpus doesn't leave when the last stage is hidden.
+                Platform.setImplicitExit(false);
+
+                WbfcFxApplication.setAnActionEvent(e);
+                WbfcFxApplication.setTableList(tableList);
+
                 Stage stage = WbfcFxApplication.getStage();
                 if (null == stage) {
                     Application.launch(WbfcFxApplication.class);

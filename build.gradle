@@ -1,6 +1,7 @@
 plugins {
     id 'java'
-    id 'org.jetbrains.intellij' version '0.4.21' // 由于0.4.21有bug Cannot resolve builtin JBR 11_0_7b765.64. Falling local Java.
+    id 'org.jetbrains.intellij' version '0.4.21'
+    // 由于0.4.21有bug Cannot resolve builtin JBR 11_0_7b765.64. Falling local Java.
 }
 
 group 'com.wisea'
@@ -11,7 +12,7 @@ repositories {
     maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
     maven { url 'https://maven.aliyun.com/repository/google' }
     maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
-    maven { url 'https://maven.aliyun.com/repository/jcenter'}
+    maven { url 'https://maven.aliyun.com/repository/jcenter' }
     mavenCentral()
 }
 
@@ -20,10 +21,16 @@ dependencies {
     compile group: 'com.google.collections', name: 'google-collections', version: '1.0'
     compile group: 'com.google.code.gson', name: 'gson', version: '2.8.6'
     compile group: 'org.mybatis.generator', name: 'mybatis-generator-core', version: '1.4.0'
-/*    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.11.1'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.1'*/
-    compile fileTree(dir:'lib',include:['*.jar'])
+//    implementation group: 'org.openjfx', name: 'javafx-base', version: '13', classifier: 'win'
+//    implementation group: 'org.openjfx', name: 'javafx-base', version: '13', classifier: 'mac'
+//    implementation group: 'org.openjfx', name: 'javafx-base', version: '13', classifier: 'linux'
+//    implementation group: 'org.openjfx', name: 'javafx-web', version: '13', classifier: 'win'
+//    implementation group: 'org.openjfx', name: 'javafx-web', version: '13', classifier: 'mac'
+//    implementation group: 'org.openjfx', name: 'javafx-web', version: '13', classifier: 'linux'
+//    implementation group: 'org.openjfx', name: 'javafx-graphics', version: '13', classifier: 'win'
+//    implementation group: 'org.openjfx', name: 'javafx-graphics', version: '13', classifier: 'mac'
+//    implementation group: 'org.openjfx', name: 'javafx-graphics', version: '13', classifier: 'linux'
+    compile fileTree(dir: 'lib', include: ['*.jar'])
 }
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
@@ -31,6 +38,7 @@ intellij {
     version '2020.1.3'
     type 'IU'
     plugins = ['java', 'DatabaseTools']
+    updateSinceUntilBuild false /* 关闭版本检测 */
 }
 patchPluginXml {
     changeNotes """
@@ -42,4 +50,7 @@ patchPluginXml {
         <li>20200727-基本功能移植完成</li>
       </ul>
       """
+}
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
 }

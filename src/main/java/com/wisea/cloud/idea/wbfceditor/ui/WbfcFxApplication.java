@@ -2,12 +2,10 @@ package com.wisea.cloud.idea.wbfceditor.ui;
 
 import com.intellij.database.psi.DbTable;
 import com.intellij.ide.ui.LafManager;
-import com.intellij.ide.ui.UIThemeProvider;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.ui.StartupUiUtil;
-import com.sun.javafx.css.StyleManager;
 import com.sun.javafx.webkit.WebConsoleListener;
 import com.wisea.cloud.common.util.ConverterUtil;
 import com.wisea.cloud.idea.wbfceditor.generator.WbfcGenerator;
@@ -20,8 +18,6 @@ import javafx.embed.swing.SwingNode;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
@@ -35,11 +31,9 @@ import org.w3c.dom.Element;
 
 import javax.swing.*;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.util.List;
 
 public class WbfcFxApplication extends Application {
@@ -117,9 +111,6 @@ public class WbfcFxApplication extends Application {
         GeneratorUtil.setWbfcEditorGenerator(WbfcGenerator);
 
         //primaryStage.setAlwaysOnTop(true);
-
-        // the wumpus doesn't leave when the last stage is hidden.
-        Platform.setImplicitExit(false);
 
         final WebView browser = new WebView();
         webEngine = browser.getEngine();
