@@ -12,7 +12,6 @@ import com.intellij.database.psi.DbDataSource;
 import com.intellij.database.psi.DbPsiFacade;
 import com.intellij.database.psi.DbTable;
 import com.intellij.database.util.DasUtil;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -25,6 +24,7 @@ import com.wisea.cloud.common.util.FtlManagerUtil;
 import com.wisea.cloud.common.util.IOUtils;
 import com.wisea.cloud.idea.wbfceditor.setting.WbfcEditorPersistentState;
 import com.wisea.cloud.idea.wbfceditor.ui.WbfcFxApplication;
+import com.wisea.cloud.idea.wbfceditor.utils.FilePathUtil;
 import com.wisea.cloud.wbfceditor.generator.WbfcEditorGenerator;
 import com.wisea.cloud.wbfceditor.generator.WbfcEditorRunner;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcConfig;
@@ -42,10 +42,11 @@ import org.mybatis.generator.logging.LogFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class WbfcGenerator implements WbfcEditorGenerator {
@@ -87,7 +88,7 @@ public class WbfcGenerator implements WbfcEditorGenerator {
                 e.printStackTrace();
             }
         } else {
-            conf.setControllerPath(project.getBasePath() + File.separator + "src" + File.separator + "main" + File.separator + "java");
+            conf.setControllerPath(FilePathUtil.getSyStemFilePath(project.getBasePath(), File.separator, "src", File.separator, "main", File.separator, "java"));
             String projectPackage = "com.wisea." + project.getName();
             conf.setControllerPackage(projectPackage + ".controller");
 
@@ -106,7 +107,7 @@ public class WbfcGenerator implements WbfcEditorGenerator {
             conf.setDaoPath(conf.getControllerPath());
             conf.setDaoPackage(projectPackage + ".mapper");
 
-            conf.setXmlPath(project.getBasePath() + File.separator + "src" + File.separator + "main" + File.separator + "resources");
+            conf.setXmlPath(FilePathUtil.getSyStemFilePath(project.getBasePath(), File.separator, "src", File.separator, "main", File.separator, "resources"));
             conf.setXmlPackage("mappings");
         }
         return gson.toJson(conf);
@@ -322,20 +323,19 @@ public class WbfcGenerator implements WbfcEditorGenerator {
      */
     @Override
     public String getWbfcPath() {
-        final String[] path = {null};
-        ApplicationManager.getApplication().invokeLater(() -> {
-            Project project = WbfcFxApplication.getProject();
-            WbfcEditorPersistentState state = WbfcEditorPersistentState.getInstance();
-            String tempPath = "";
-            if(null != state){
-                tempPath = state.getPath();
-            }
-            path[0] = ConverterUtil.toString(state.getPath(), project.getWorkspaceFile().getParent().getPath() + File.separator + "wbfceditor");
-            if (path[0].endsWith("\\") || path[0].endsWith("/")) {
-                path[0] = path[0].substring(0, path[0].length() - 1);
-            }
-        });
-        return path[0];
+        String path = "";
+        Project project = WbfcFxApplication.getProject();
+        WbfcEditorPersistentState state = WbfcEditorPersistentState.getInstance();
+        String tempPath = "";
+        if (null != state) {
+            tempPath = state.getPath();
+        }
+        path = ConverterUtil.toString(state.getPath(), FilePathUtil.getSyStemFilePath(project.getWorkspaceFile().getParent().getPath(), File.separator, "wbfceditor"));
+        if (path.endsWith("\\") || path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+        path = FilePathUtil.getSyStemFilePath(path);
+        return path;
     }
 
     /**
@@ -399,12 +399,42 @@ public class WbfcGenerator implements WbfcEditorGenerator {
                     String genConfiTpl = Lists.newArrayList(Arrays.stream(tplArray).iterator()).stream().collect(Collectors.joining("\n"));
                     // 生成xml
                     res = FtlManagerUtil.createWithStr(wbfcConfig, genConfiTpl);
+                    // 转码
+                    //res = new String(res.getBytes(), Charset.forName(wbfcConfig.getCharset()));
+                    WbfcFxApplication.setDiyXml(URLEncoder.encode(res, StandardCharsets.UTF_8.name()));
+//                WbfcFxApplication.setDiyXml(ConverterUtil.escape(res));
+                    //WbfcFxApplication.setDiyXml(encodeStr(res, wbfcConfig.getCharset());
                 } catch (Exception e) {
                     ((WbfcEditorLogger) logger).error(e);
                 }
-                WbfcFxApplication.setDiyXml(ConverterUtil.escape(res));
             }
         }).start();
+    }
+
+    /**
+     * 转码
+     *
+     * @param str
+     * @param charset
+     * @return
+     */
+    public String encodeStr(String str, String charset) {
+        String temp = null;
+        try {
+            temp = URLEncoder.encode(str, charset);
+            // 如果是utf8的 js还有部分符号需要替换
+            if (Charset.forName(charset).equals(StandardCharsets.UTF_8)) {
+                temp = temp.replaceAll("\\+", "%20")
+                        .replaceAll("\\!", "%21")
+                        .replaceAll("\\'", "%27")
+                        .replaceAll("\\(", "%28")
+                        .replaceAll("\\)", "%29")
+                        .replaceAll("\\~", "%7E");
+            }
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return temp;
     }
 
     /**
@@ -427,7 +457,7 @@ public class WbfcGenerator implements WbfcEditorGenerator {
      */
     public String openChooseFile(String pathName, String pathVal) {
         File exisFir = null;
-        if(ConverterUtil.isNotEmpty(pathVal)){
+        if (ConverterUtil.isNotEmpty(pathVal)) {
             exisFir = findExistsFile(pathVal);
         }
         DirectoryChooser directoryChooser = new DirectoryChooser();
@@ -496,5 +526,10 @@ public class WbfcGenerator implements WbfcEditorGenerator {
             }
         }
         return exVf;
+    }
+
+    public String getCharsetList() {
+        SortedMap<String, Charset> map = Charset.availableCharsets();
+        return new Gson().toJson(map.values().stream().filter(f -> f.canEncode()).map(Charset::name).collect(Collectors.toList()));
     }
 }

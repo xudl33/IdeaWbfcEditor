@@ -71,7 +71,7 @@ public class WbfcEditorLogger extends Logger implements Log {
     }
 
     @Override
-    public void error(String message, @Nullable Throwable t, @NotNull String @NotNull ... details) {
+    public void error(String message, @Nullable Throwable t, @NotNull String... details) {
 
         String fullMessage = details.length > 0 ? message + "\nDetails: " + StringUtil.join(details, "\n") : message;
         String tempMsg = LoggerUtil.getLogger() + " ERROR " + fullMessage + ": " + (Exceptions.getStackTraceAsString(t));

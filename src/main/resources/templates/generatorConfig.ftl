@@ -5,8 +5,8 @@
 
 <generatorConfiguration>
     <#if logProperties?? >
-    <!-- 引入配置文件 -->
-    <properties resource="${logProperties}"/>
+        <!-- 引入配置文件 -->
+        <properties resource="${logProperties}"/>
     </#if>
 
     <!-- 指定数据连接驱动jar地址 -->
@@ -14,6 +14,8 @@
 
     <!-- 一个数据库一个context -->
     <context id="MySqlTables" targetRuntime="MyBatis3">
+        <property name="javaFileEncoding" value="${charset}"/>
+
         <!-- Wbfc生成插件 -->
         <plugin type="com.wisea.cloud.wbfceditor.generator.WbfcModelGenerator">
             <property name="hasPoVo" value="${hasPoVo}"/>
@@ -29,6 +31,8 @@
             <property name="suppressAllComments" value="false"/>
             <!-- 是否生成注释代时间戳 -->
             <property name="suppressDate" value="true"/>
+            <!-- 文件编码格式 -->
+            <#--            <property name="fileEncoding" value="UTF-8"/>-->
         </commentGenerator>
 
         <!--配置数据库链接 -->
@@ -73,6 +77,8 @@
             <property name="hasPoVo" value="${hasPoVo}"/>
             <!-- 精简Po和Vo -->
             <property name="simplePoVo" value="${simplePoVo}"/>
+            <!-- 文件编码格式 -->
+            <#--            <property name="fileEncoding" value="UTF-8"/>-->
         </javaClientGenerator>
 
         <!-- 配置表信息 -->
@@ -86,7 +92,7 @@
                             javaType="java.time.OffsetDateTime"/>
         </table> -->
         <#list tablesList as tbl>
-        ${tbl}
+            ${tbl}
         </#list>
     </context>
 </generatorConfiguration>

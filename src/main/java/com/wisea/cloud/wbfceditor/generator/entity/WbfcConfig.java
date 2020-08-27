@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 
 /**
  * Wbfc代码生成器配置文件
- *
  */
 public class WbfcConfig implements Serializable {
 
@@ -99,6 +98,9 @@ public class WbfcConfig implements Serializable {
 
     @Check(test = "required")
     private String simplePoVo = "false";
+
+    @Check(test = "required")
+    private String charset = "UTF-8";
 
     public String getLogProperties() {
         return logProperties;
@@ -335,6 +337,14 @@ public class WbfcConfig implements Serializable {
         this.diyXml = diyXml;
     }
 
+    public String getCharset() {
+        return charset;
+    }
+
+    public void setCharset(String charset) {
+        this.charset = charset;
+    }
+
     public WbfcDataTable getDataTable(String tableName) {
         Optional<WbfcDataTable> tab = tablesCloumnList.stream().filter(t -> tableName.equals(t.getTableName())).findFirst();
         if (!tab.isPresent()) {
@@ -356,15 +366,15 @@ public class WbfcConfig implements Serializable {
         return res;
     }
 
-    public void setTotalPath(String totalPath){
-        if (ConverterUtil.isNotEmpty(totalPath)){
-            if(ConverterUtil.toBoolean(this.hasController)){
+    public void setTotalPath(String totalPath) {
+        if (ConverterUtil.isNotEmpty(totalPath)) {
+            if (ConverterUtil.toBoolean(this.hasController)) {
                 this.setControllerPath(totalPath);
             }
-            if(ConverterUtil.toBoolean(this.hasService)){
+            if (ConverterUtil.toBoolean(this.hasService)) {
                 this.setServicePath(totalPath);
             }
-            if(ConverterUtil.toBoolean(this.hasPoVo)){
+            if (ConverterUtil.toBoolean(this.hasPoVo)) {
                 this.setPoPath(totalPath);
                 this.setVoPath(totalPath);
             }

@@ -7,21 +7,19 @@ import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.options.SearchableConfigurable;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectUtil;
-import com.intellij.openapi.util.io.FileUtil;
-import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.components.fields.ExtendableTextField;
 import com.wisea.cloud.common.util.ConverterUtil;
 import com.wisea.cloud.idea.wbfceditor.generator.WbfcGenerator;
 import com.wisea.cloud.idea.wbfceditor.setting.WbfcEditorPersistentState;
+import com.wisea.cloud.idea.wbfceditor.utils.FilePathUtil;
 import com.wisea.cloud.wbfceditor.generator.util.GeneratorUtil;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-
 import java.io.File;
 
 import static com.wisea.cloud.idea.wbfceditor.constants.Constants.SETTING_TITLE;
@@ -55,15 +53,15 @@ public class WbfcEditorSettingConfigurable implements SearchableConfigurable {
         }
         settingPanel = new JPanel();
         pathLabel = new JLabel("Wbfc Editor Cache Path");
-        pathField = (new ExtendableTextField(50)).addBrowseExtension(() -> {
+        pathField = (new ExtendableTextField()).addBrowseExtension(() -> {
             showDialog();
         }, (Disposable) null);
-        Project project = ProjectUtil.guessCurrentProject(settingPanel.getRootPane());
+        Project project = ProjectUtil.guessCurrentProject(this.getPreferredFocusedComponent());
         if (null != project) {
             VirtualFile virtualFile = project.getWorkspaceFile();
             if (null != virtualFile) {
-                String defPath = ConverterUtil.toString(storeState.getPath(), GeneratorUtil.getWbfcConfigPath());
-                pathField.setText(defPath);
+                String defPath = ConverterUtil.toString(storeState.getPath(), virtualFile.getParent().getPath() + File.separator + "wbfceditor");
+                pathField.setText(FilePathUtil.getSyStemFilePath(defPath));
             }
         }
 //        pathField.setTextToTriggerEmptyTextStatus("Default");
@@ -78,7 +76,7 @@ public class WbfcEditorSettingConfigurable implements SearchableConfigurable {
         VirtualFile select = WbfcGenerator.findExistsVirFile(defPath);
         VirtualFile file = FileChooser.chooseFile(FileChooserDescriptorFactory.createSingleFolderDescriptor(), (Project) null, (VirtualFile) select);
         if (file != null) {
-            pathField.setText(FileUtil.toSystemDependentName(file.getPath()) + File.separator + "wbfceditor");
+            pathField.setText(FilePathUtil.getSyStemFilePath(file.getPath(), File.separator, "wbfceditor"));
         }
     }
 

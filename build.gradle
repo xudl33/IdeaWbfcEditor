@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'com.wisea'
-version '1.0.3'
+version '1.0.4'
 
 repositories {
     mavenLocal()
@@ -44,13 +44,25 @@ patchPluginXml {
     changeNotes """
       更新记录<br>
       <ul>
+        <li>20200826-增加了输出文件自选编码格式的功能;修正了自定义映射名不正确的问题;修正Settings找不到默认工程目录的问题；修正MAC OSX无法读取配置路径的问题;</li>
         <li>20200812-增加配置路径表单重置功能;优化视觉效果、表单按钮美化；调整图标位置,增加Tools菜单按钮;</li>
         <li>20200810-增加DiyXml的功能;生成功能全部完成</li>
         <li>20200731-增加simplePoVo和batchInsert/update/delete相关的代码生成功能；</li>
         <li>20200727-基本功能移植完成</li>
       </ul>
+      
       """
 }
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
+
+//task runMyIdea(type: org.jetbrains.intellij.tasks.RunIdeTask) {
+//    ideDirectory = "D:\\works\\ideaIU-2020.1.3.win"
+//    jbrVersion = runIde.jbrVersion
+//    jvmArgs.add("-javaagent:D:\\worksIdeaProjects\\WbfcEditor\\build\\idea-sandbox\\plugins\\jetbrains-agent\\lib\\jetbrains-agent.jar")
+////    jvmArgs = runIde.jvmArgs   , dependsOn: 'runIde'
+//    configDirectory = runIde.configDirectory
+//    pluginsDirectory = runIde.pluginsDirectory
+//    systemDirectory = runIde.systemDirectory
+//}

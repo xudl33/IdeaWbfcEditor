@@ -4,6 +4,7 @@ import com.intellij.database.psi.DbTable;
 import com.intellij.ide.ui.LafManager;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.ui.StartupUiUtil;
 import com.sun.javafx.webkit.WebConsoleListener;
@@ -14,7 +15,6 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
-import javafx.embed.swing.SwingNode;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
@@ -24,8 +24,6 @@ import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import netscape.javascript.JSObject;
 import org.apache.commons.compress.utils.Lists;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -44,7 +42,8 @@ public class WbfcFxApplication extends Application {
 
     private static WbfcGenerator WbfcGenerator = new WbfcGenerator();
     private static List<DbTable> tableList = Lists.newArrayList();
-    private Logger logger = LoggerFactory.getLogger(getClass());
+//    private Logger logger = LoggerFactory.getLogger(getClass());
+    private Logger logger = Logger.getInstance(getClass());
 
     private static AnActionEvent currentEvent = null;
     private static Stage stage = null;
@@ -112,6 +111,7 @@ public class WbfcFxApplication extends Application {
 
         //primaryStage.setAlwaysOnTop(true);
 
+        logger.debug("WbfcFxApplication start...");
         final WebView browser = new WebView();
         webEngine = browser.getEngine();
 
@@ -125,6 +125,7 @@ public class WbfcFxApplication extends Application {
                         JSObject win = (JSObject) webEngine.executeScript("window");
                         win.setMember("wbfcGenerator", WbfcGenerator
                         );//设置变量
+                        logger.debug("WbfcFxApplication success...");
                     }
                 });
 
@@ -225,15 +226,6 @@ public class WbfcFxApplication extends Application {
                 doc.getDocumentElement().getElementsByTagName("head").item(0).appendChild(node);
             }
         }
-    }
-
-    private void createAndSetSwingContent(final SwingNode swingNode) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                swingNode.setContent(new JButton("Click me!"));
-            }
-        });
     }
 
     public static void hide() {

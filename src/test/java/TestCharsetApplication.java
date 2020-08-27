@@ -8,9 +8,6 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import netscape.javascript.JSObject;
 
-import java.io.File;
-import java.net.URL;
-
 
 public class TestCharsetApplication extends Application {
     private static TestGreneator wbfcGenerator = new TestGreneator();
@@ -26,17 +23,24 @@ public class TestCharsetApplication extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        URL url = new File(getClass().getResource("/templates/index.html").toURI()).toURI().toURL();
-
+        //URL url = new File(getClass().getResource("/templates/test.html").toURI()).toURI().toURL();
+// the wumpus doesn't leave when the last stage is hidden.
+        Platform.setImplicitExit(false);
         WebView webView = new WebView();
         webEngine = webView.getEngine();
+        webEngine.setJavaScriptEnabled(true);
+        try {
+            webEngine.load(getClass().getResource("/templates/test.html").toExternalForm());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         // 设置Java的监听器
         webEngine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
             if (Worker.State.SUCCEEDED == newValue) {
                 // 在web引擎页面中设置一个名为“javaConnector”的接口对象
                 JSObject window = (JSObject) webEngine.executeScript("window");
-                window.setMember("wbfcGenerator",wbfcGenerator);//设置变量
+                window.setMember("wbfcGenerator", wbfcGenerator);//设置变量
                 //window.setMember("wbfcGenerator", new Wb);
                 // 获取Javascript连接器对象。
                 //javascriptConnector = (JSObject) webEngine.executeScript("getJsConnector()");
@@ -87,7 +91,7 @@ public class TestCharsetApplication extends Application {
         }, true));*/
 
         // 这里加载页面
-        webEngine.load(getClass().getResource("/templates/index.html").toExternalForm());
+        //webEngine.load(getClass().getResource("/templates/index.html").toExternalForm());
     }
 
     public static void appendLog(String text) {
