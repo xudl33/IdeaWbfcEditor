@@ -31,7 +31,6 @@ import com.wisea.cloud.wbfceditor.generator.entity.WbfcConfig;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataColumn;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataTable;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDbInfo;
-import com.wisea.cloud.wbfceditor.generator.logger.WbfcEditorLogger;
 import com.wisea.cloud.wbfceditor.generator.util.GeneratorUtil;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
@@ -394,18 +393,17 @@ public class WbfcGenerator implements WbfcEditorGenerator {
                 try {
                     // 校验并生成配置
                     WbfcConfig wbfcConfig = GeneratorUtil.beforeGenMakeConfig();
+                    // 校验文件生成目录
+                    GeneratorUtil.makeAllPathDirs(wbfcConfig);
                     String[] tplArray = IOUtils.readLines(this.getClass().getResourceAsStream("/templates/generatorConfig.ftl"));
                     // 获取模板
                     String genConfiTpl = Lists.newArrayList(Arrays.stream(tplArray).iterator()).stream().collect(Collectors.joining("\n"));
                     // 生成xml
                     res = FtlManagerUtil.createWithStr(wbfcConfig, genConfiTpl);
                     // 转码
-                    //res = new String(res.getBytes(), Charset.forName(wbfcConfig.getCharset()));
-                    WbfcFxApplication.setDiyXml(URLEncoder.encode(res, StandardCharsets.UTF_8.name()));
-//                WbfcFxApplication.setDiyXml(ConverterUtil.escape(res));
-                    //WbfcFxApplication.setDiyXml(encodeStr(res, wbfcConfig.getCharset());
+                    WbfcFxApplication.setDiyXml(encodeStr(res, StandardCharsets.UTF_8.name()));
                 } catch (Exception e) {
-                    ((WbfcEditorLogger) logger).error(e);
+                    logger.error(e.getMessage());
                 }
             }
         }).start();

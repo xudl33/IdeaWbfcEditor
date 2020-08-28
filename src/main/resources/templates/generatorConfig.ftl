@@ -32,17 +32,15 @@
             <!-- 是否生成注释代时间戳 -->
             <property name="suppressDate" value="true"/>
             <!-- 文件编码格式 -->
-            <#--            <property name="fileEncoding" value="UTF-8"/>-->
         </commentGenerator>
 
         <!--配置数据库链接 -->
         <jdbcConnection driverClass="${dbDriver}"
                         connectionURL="${dbUrl}"
                         userId="${dbUser}" password="${dbPassword}">
-            <property name="useUnicode" value="true"></property>
-            <property name="nullCatalogMeansCurrent" value="true"></property>
-            <property name="characterEncoding" value="UTF-8"></property>
-            <property name="zeroDateTimeBehavior" value="convertToNull"></property>
+            <#list dbUrlPropertyMap?keys as key>
+            <property name="${key}" value="${dbUrlPropertyMap[key]}"></property>
+            </#list>
         </jdbcConnection>
 
         <!-- 类型转换 -->
@@ -77,8 +75,6 @@
             <property name="hasPoVo" value="${hasPoVo}"/>
             <!-- 精简Po和Vo -->
             <property name="simplePoVo" value="${simplePoVo}"/>
-            <!-- 文件编码格式 -->
-            <#--            <property name="fileEncoding" value="UTF-8"/>-->
         </javaClientGenerator>
 
         <!-- 配置表信息 -->
@@ -92,7 +88,7 @@
                             javaType="java.time.OffsetDateTime"/>
         </table> -->
         <#list tablesList as tbl>
-            ${tbl}
+        ${tbl}
         </#list>
     </context>
 </generatorConfiguration>

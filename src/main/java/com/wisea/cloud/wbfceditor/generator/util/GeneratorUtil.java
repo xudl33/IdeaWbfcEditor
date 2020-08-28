@@ -1,12 +1,13 @@
 package com.wisea.cloud.wbfceditor.generator.util;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.wisea.cloud.common.exception.VerifyException;
 import com.wisea.cloud.common.mybatis.generator.MybatisGeneratorTables;
 import com.wisea.cloud.common.mybatis.generator.TableColumn;
 import com.wisea.cloud.common.util.ConverterUtil;
 import com.wisea.cloud.common.util.DataCheckUtil;
-import com.wisea.cloud.common.util.IOUtils;
 import com.wisea.cloud.wbfceditor.generator.WbfcEditorGenerator;
 import com.wisea.cloud.wbfceditor.generator.entity.*;
 import org.mybatis.generator.api.IntrospectedTable;
@@ -16,9 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.text.MessageFormat;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class GeneratorUtil {
@@ -33,6 +32,15 @@ public class GeneratorUtil {
     private static WbfcEditorGenerator wbfcEditorGenerator = null;
 
     private static Logger logger = LoggerFactory.getLogger(GeneratorUtil.class);
+
+    protected static Map<String, String> paramMap = new LinkedHashMap() {
+        {
+            put("useUnicode", "true");
+            put("nullCatalogMeansCurrent", "true");
+            put("characterEncoding", "UTF-8");
+            put("zeroDateTimeBehavior", "convertToNull");
+        }
+    };
 
     /**
      * 获取配置路径
@@ -204,6 +212,18 @@ public class GeneratorUtil {
         createDir(dp);
         File xp = new File(wbfc.getXmlPath());
         createDir(xp);
+
+        Map<String, String> tempMap = Maps.newLinkedHashMap(paramMap);
+        String url = wbfc.getDbUrl();
+        // 拆分URL参数
+        if (url.contains("?")) {
+            // 覆盖默认参数
+            tempMap.putAll(Splitter.on("&").withKeyValueSeparator("=").split(url));
+            // 如果有参数就截取 只保留url部分
+            url = url.substring(0, url.indexOf("?"));
+            wbfc.setDbUrl(url);
+        }
+        wbfc.setDbUrlPropertyMap(tempMap);
     }
 
 

@@ -50,7 +50,6 @@ patchPluginXml {
         <li>20200731-增加simplePoVo和batchInsert/update/delete相关的代码生成功能；</li>
         <li>20200727-基本功能移植完成</li>
       </ul>
-      
       """
 }
 tasks.withType(JavaCompile) {

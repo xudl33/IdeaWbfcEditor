@@ -28,6 +28,10 @@ WbfcEditor是一个基于WBFC架构的代码生成器。可以通过DB进行反�
 1. 选择发布版本点击进行 [下载](https://github.com/xudl33/IdeaWbfcEditor/releases)
 2. 进入IDEA -> Settings -> Plugins -> 右侧小齿轮 -> Install Plugin from disk -> 选择 WbfcEditor-x.x.x.zip -> 重启IDEA
 
+本插件要求IDEA版本在2020.2以上，可以直接安装使用, 2020.2以下只能使用 [1.0.3](https://github.com/xudl33/IdeaWbfcEditor/releases/tag/1.0.3) 且IDEA Runtime Version必须为JDK1.8.0_181及以上版本
+
+本插件依赖 [JavaFX Runtime for Plugins JetBrains](https://plugins.jetbrains.com/plugin/14250-javafx-runtime-for-plugins) 和 Database 插件
+    
 ## 配置
 成功安装了WbfcEditor插件的IDEA Settings -> WbfcEditor 可以进行工作目录的配置。WbfcEditor使用到的缓存和临时文件，都会使用改配置作为工作目录。
 默认值为 `${workspace}/.idea/WbfcEditor`

@@ -102,6 +102,8 @@ public class WbfcConfig implements Serializable {
     @Check(test = "required")
     private String charset = "UTF-8";
 
+    private Map<String, String> dbUrlPropertyMap = Maps.newLinkedHashMap();
+
     public String getLogProperties() {
         return logProperties;
     }
@@ -343,6 +345,14 @@ public class WbfcConfig implements Serializable {
 
     public void setCharset(String charset) {
         this.charset = charset;
+    }
+
+    public Map<String, String> getDbUrlPropertyMap() {
+        return dbUrlPropertyMap;
+    }
+
+    public void setDbUrlPropertyMap(Map<String, String> dbUrlPropertyMap) {
+        this.dbUrlPropertyMap = dbUrlPropertyMap;
     }
 
     public WbfcDataTable getDataTable(String tableName) {
