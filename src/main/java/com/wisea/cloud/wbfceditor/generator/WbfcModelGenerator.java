@@ -1695,6 +1695,14 @@ public class WbfcModelGenerator extends PluginAdapter {
                                 testList.add("\"required\"");
                                 swaggerAttrList.add("required = true");
                             }
+                            // 如果是主键还是LONG型 就添加datatype=string
+                            if (isPrimaryKey && colJavaType.equals(Long.class.getName())) {
+                                swaggerAttrList.add("dataType = \"java.lang.String\"");
+                            }
+                        }
+                        // 如果是外键或者以Id为结尾的 大部分情况是其他表的关联ID 如果也是LONG型 同样添加datatype=string
+                        if (fieldName.endsWith("Id") && colJavaType.equals(Long.class.getName())) {
+                            swaggerAttrList.add("dataType = \"java.lang.String\"");
                         }
                         // 长度的判断
                         int colLength = introspectedColumn.getLength();
