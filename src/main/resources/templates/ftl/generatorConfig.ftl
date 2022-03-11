@@ -23,6 +23,8 @@
             <property name="hasController" value="${hasController}"/>
             <!-- 精简Po和Vo -->
             <property name="simplePoVo" value="${simplePoVo}"/>
+            <!-- 更新策略 -->
+            <property name="updateStrategy" value="${updateStrategy}"/>
         </plugin>
 
         <!-- 注释 -->
@@ -37,10 +39,8 @@
         <!--配置数据库链接 -->
         <jdbcConnection driverClass="${dbDriver}"
                         connectionURL="${dbUrl}"
-                        userId="${dbUser}" password="${dbPassword}">
-            <#list dbUrlPropertyMap?keys as key>
-            <property name="${key}" value="${dbUrlPropertyMap[key]}"></property>
-            </#list>
+                        userId="${dbUser}" password="${dbPassword}"><#list dbUrlPropertyMap?keys as key>
+            <property name="${key}" value="${dbUrlPropertyMap[key]}"></property></#list>
         </jdbcConnection>
 
         <!-- 类型转换 -->
@@ -58,7 +58,7 @@
             <property name="trimStrings" value="true"/>
         </javaModelGenerator>
 
-        <!-- 生成mapxml文件 -->
+        <!-- 生成mapxml文件 改类执行在WbfcMapperGenerator中覆盖了默认的生成器 使用的是WbfcXMLMapperGenerator-->
         <sqlMapGenerator targetPackage="${xmlPackage}"
                          targetProject="${xmlPath}">
             <!-- 是否在当前路径下新加一层schema,eg：fase路径com.oop.eksp.user.model， true:com.oop.eksp.user.model.[schemaName] -->
@@ -87,8 +87,30 @@
             <columnOverride column="update_date"
                             javaType="java.time.OffsetDateTime"/>
         </table> -->
-        <#list tablesList as tbl>
-        ${tbl}
-        </#list>
+
+        <!-- tableInfo isRelation=true说明是关系表 不生成Controller -->
+        <!-- <table tableName="sys_user_role" domainObjectName="SysUserRole"
+               enableCountByExample="false" enableSelectByExample="false"
+               enableUpdateByExample="false" enableDeleteByExample="false">
+            <tableInfo isRelation="true"></tableInfo>
+        </table> -->
+
+        <!-- joinTable type=OneToOne 一对一 type=oneToMany(默认) 一对多 -->
+        <!-- tableName关联的表名  columns 关联的列 结构:{关联表列名 = 主表列名} joinTable可以无限嵌套和混合使用 -->
+        <!-- <table tableName="sys_user" domainObjectName="SysUser"
+               enableCountByExample="false" enableSelectByExample="false"
+               enableUpdateByExample="false" enableDeleteByExample="false">
+            <columnOverride column="create_date"
+                            javaType="java.time.OffsetDateTime"/>
+            <columnOverride column="update_date"
+                            javaType="java.time.OffsetDateTime"/>
+            <joinTable tableName="sys_user_role" columns="{user_id = id}">
+                <joinTable type="OneToOne" tableName="sys_role" columns="{id = role_id}" >
+                </joinTable>
+            </joinTable>
+        </table> -->
+<#list tablesList as tbl>
+${tbl}
+</#list>
     </context>
 </generatorConfiguration>

@@ -1,5 +1,8 @@
 package com.wisea.cloud.idea.wbfceditor;
 
+import com.intellij.database.model.DasSchemaChild;
+import com.intellij.database.model.basic.BasicElement;
+import com.intellij.database.psi.DbElement;
 import com.intellij.database.psi.DbTable;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -13,8 +16,8 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 import org.apache.commons.compress.utils.Lists;
+import org.jetbrains.annotations.Nullable;
 
-import javax.swing.*;
 import java.util.List;
 
 
@@ -104,5 +107,11 @@ public class WbfcEditorAction extends AnAction {
 
 
     }
-
+    private static boolean isDbElementScriptable(@Nullable DbElement element) {
+        if (element == null) {
+            return false;
+        } else {
+            return element instanceof DasSchemaChild ? true : element.getDelegate() instanceof BasicElement;
+        }
+    }
 }

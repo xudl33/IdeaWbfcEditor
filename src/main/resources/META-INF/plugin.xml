@@ -23,7 +23,8 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.ultimate</depends>
     <depends>com.intellij.database</depends>
-<!--    <depends>com.intellij.javafx</depends>-->
+    <!-- 2020.2以上版本才有 -->
+    <depends>com.intellij.javafx</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
@@ -38,6 +39,16 @@
 
     <actions>
         <!-- Add your actions here -->
+<!--        <group id="com.wisea.cloud.idea.wbfceditor.WbfcEditor.Group" popup="true"-->
+<!--               class="com.intellij.database.actions.GenerateSqlActions$SqlActionsGroup">-->
+<!--            <reference ref="Jdbc.OpenEditor.DDL"/>-->
+<!--            <reference id="DatabaseView.SqlGenerator"/>-->
+<!--            <separator/>-->
+<!--            <reference id="DatabaseView.CopyDdlFromDbAction"/>-->
+<!--            <reference id="DatabaseView.CopyDdlAction"/>-->
+<!--            <reference id="DatabaseView.OpenDdlInConsole"/>-->
+<!--            <add-to-group group-id="EditorPopupMenu2" anchor="first"/>-->
+<!--        </group>-->
         <action id="com.wisea.cloud.idea.wbfceditor.WbfcEditorAction"
                 class="com.wisea.cloud.idea.wbfceditor.WbfcEditorAction" text="WbfcEditor" icon="/icons/icon_16x16.png">
             <add-to-group group-id="DatabaseViewPopupMenu" anchor="first"/>

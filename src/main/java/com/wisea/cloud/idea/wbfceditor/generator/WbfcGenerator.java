@@ -395,7 +395,7 @@ public class WbfcGenerator implements WbfcEditorGenerator {
                     WbfcConfig wbfcConfig = GeneratorUtil.beforeGenMakeConfig();
                     // 校验文件生成目录
                     GeneratorUtil.makeAllPathDirs(wbfcConfig);
-                    String[] tplArray = IOUtils.readLines(this.getClass().getResourceAsStream("/templates/generatorConfig.ftl"));
+                    String[] tplArray = IOUtils.readLines(this.getClass().getResourceAsStream("/templates/ftl/generatorConfig.ftl"));
                     // 获取模板
                     String genConfiTpl = Lists.newArrayList(Arrays.stream(tplArray).iterator()).stream().collect(Collectors.joining("\n"));
                     // 生成xml

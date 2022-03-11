@@ -11,9 +11,6 @@ import org.mybatis.generator.codegen.mybatis3.MyBatis3FormattingUtilities;
 import org.mybatis.generator.codegen.mybatis3.xmlmapper.elements.AbstractXmlElementGenerator;
 
 import java.util.List;
-import java.util.Optional;
-
-import static org.mybatis.generator.internal.util.StringUtility.stringHasValue;
 
 public class WbfcBatchInsertElementGenerator extends AbstractXmlElementGenerator {
 
@@ -63,8 +60,6 @@ public class WbfcBatchInsertElementGenerator extends AbstractXmlElementGenerator
         for (int i = 0; i < columnList.size(); i++) {
             OutputUtilities.xmlIndent(sTemp, 1);
             IntrospectedColumn col = columnList.get(i);
-            sTemp.append(MyBatis3FormattingUtilities.getEscapedColumnName(col));
-            sTemp.append(" = ");
             sTemp.append(MyBatis3FormattingUtilities.getParameterClause(col, "item."));
             if(i < columnList.size() - 1){
                 sTemp.append(",");

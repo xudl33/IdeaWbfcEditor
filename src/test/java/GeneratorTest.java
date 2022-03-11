@@ -4,22 +4,19 @@ import com.wisea.cloud.common.mybatis.generator.TableColumn;
 import com.wisea.cloud.common.util.FtlManagerUtil;
 import com.wisea.cloud.common.util.IOUtils;
 import com.wisea.cloud.idea.wbfceditor.generator.WbfcGenerator;
-import com.wisea.cloud.wbfceditor.generator.WbfcEditorRunner;
+import com.wisea.cloud.wbfceditor.generator.config.WbfcConfigurationParser;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcConfig;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataColumn;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataTable;
 import com.wisea.cloud.wbfceditor.generator.util.GeneratorUtil;
 import org.mybatis.generator.api.MyBatisGenerator;
 import org.mybatis.generator.config.Configuration;
-import org.mybatis.generator.config.xml.ConfigurationParser;
 import org.mybatis.generator.exception.InvalidConfigurationException;
 import org.mybatis.generator.exception.XMLParserException;
 import org.mybatis.generator.internal.DefaultShellCallback;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
@@ -28,15 +25,15 @@ public class GeneratorTest {
     public static void main(String[] args) throws InvalidConfigurationException, InterruptedException, SQLException, IOException, XMLParserException {
         WbfcGenerator wbfcGenerator = new WbfcGenerator();
         WbfcConfig wbfcConfig = new WbfcConfig();
-        URL url = null;
-        try {
-            url = new File(GeneratorTest.class.getResource("/config/log4j.properties").toURI()).toURI().toURL();
-            wbfcConfig.setLogProperties(url.toString().replace("file:/", "file:///"));
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
+//        URL url = null;
+//        try {
+//            url = new File(GeneratorTest.class.getResource("/config/log4j.properties").toURI()).toURI().toURL();
+//            wbfcConfig.setLogProperties(url.toString().replace("file:/", "file:///"));
+//        } catch (URISyntaxException e) {
+//            e.printStackTrace();
+//        }
         wbfcConfig.setClassPathEntry("D:/worksIdeaProjects/WbfcEditor/build/idea-sandbox/config/jdbc-drivers/MySQL ConnectorJ/8.0.21/mysql-connector-java-8.0.21.jar");
-        wbfcConfig.setDbUrl("jdbc:mysql://192.168.1.150:3306/qdcytest2");
+        wbfcConfig.setDbUrl("jdbc:mysql://192.168.5.150:3306/qdcytest2");
         wbfcConfig.setDbDriver("com.mysql.cj.jdbc.Driver");
         wbfcConfig.setDbUser("dbuser");
         wbfcConfig.setDbPassword("dbuser123@");
@@ -51,11 +48,31 @@ public class GeneratorTest {
         wbfcConfig.setXmlPackage("mappings");
         wbfcConfig.setSimplePoVo("false");
         List<WbfcDataTable> tableList = Lists.newLinkedList();
-        WbfcDataTable table = new WbfcDataTable("standard_type_mage", "StandardTypeMage");
+        WbfcDataTable table = new WbfcDataTable("gen_test", "GenTest");
         table.setBatchInsert("true");
         table.setBatchUpdate("true");
         table.setBatchDelete("true");
         tableList.add(table);
+        WbfcDataTable table2 = new WbfcDataTable("sys_user", "SysUser");
+        table2.setBatchInsert("true");
+        table2.setBatchUpdate("true");
+        table2.setBatchDelete("true");
+        tableList.add(table2);
+        WbfcDataTable table5 = new WbfcDataTable("sys_user_role", "SysUserRole");
+//        table5.setBatchInsert("true");
+//        table5.setBatchUpdate("true");
+//        table5.setBatchDelete("true");
+        tableList.add(table5);
+        WbfcDataTable table3 = new WbfcDataTable("sys_role", "SysRole");
+        table3.setBatchInsert("true");
+        table3.setBatchUpdate("true");
+        table3.setBatchDelete("true");
+        tableList.add(table3);
+        WbfcDataTable table4 = new WbfcDataTable("sys_role_menu", "SysRoleMenu");
+        table4.setBatchInsert("true");
+        table4.setBatchUpdate("true");
+        table4.setBatchDelete("true");
+        tableList.add(table4);
         wbfcConfig.setTablesCloumnList(tableList);
         GeneratorUtil.setWbfcEditorGenerator(wbfcGenerator);
         GeneratorUtil.setWbfcConfig(wbfcConfig);
@@ -75,13 +92,16 @@ public class GeneratorTest {
             }
         }
         wbfcConfig.setTablesList(tableStrList);
+        // 校验文件生成目录
+        GeneratorUtil.makeAllPathDirs(wbfcConfig);
+
         File newGenerator = new File("mybatisGenerator.xml");
         IOUtils.createFileParents(newGenerator);
         try {
             if (newGenerator.exists()) {
                 newGenerator.delete();
             }
-            FtlManagerUtil.ftlPath = "/templates/";
+            FtlManagerUtil.ftlPath = "/templates/ftl";
             FtlManagerUtil.createTotal(newGenerator, wbfcConfig, "generatorConfig.ftl");
         } catch (Exception e) {
             e.printStackTrace();
@@ -104,7 +124,7 @@ public class GeneratorTest {
         extraProperties.setProperty("log4j.appender.ConsoleLogger.ConversionPattern", "%-4r %-5p %c - %m%n");
         extraProperties.setProperty("log4j.logger.org.mybatis.generator", "DEBUG");*/
 
-        ConfigurationParser cp = new ConfigurationParser(extraProperties, warnings);
+        WbfcConfigurationParser cp = new WbfcConfigurationParser(extraProperties, warnings);
 //        Configuration config = cp.parseConfiguration(new File("D:\\maven_repository\\.m2\\repository\\caches\\modules-2\\files-2.1\\com.jetbrains.intellij.idea\\ideaIU\\2020.1.3\\6d8aedc3acbb649a85115137d9da55ac9140dc65\\ideaIU-2020.1.3\\bin\\WbfcEditorTempFiles\\mybatisGenerator.xml"));
         Configuration config = cp.parseConfiguration(newGenerator);
         DefaultShellCallback callback = new DefaultShellCallback(overwrite);

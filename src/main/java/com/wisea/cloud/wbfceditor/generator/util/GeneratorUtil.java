@@ -1,10 +1,11 @@
 package com.wisea.cloud.wbfceditor.generator.util;
 
+import com.google.common.base.CaseFormat;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.gson.reflect.TypeToken;
 import com.wisea.cloud.common.exception.VerifyException;
-import com.wisea.cloud.common.mybatis.generator.MybatisGeneratorTables;
 import com.wisea.cloud.common.mybatis.generator.TableColumn;
 import com.wisea.cloud.common.util.ConverterUtil;
 import com.wisea.cloud.common.util.DataCheckUtil;
@@ -12,10 +13,13 @@ import com.wisea.cloud.wbfceditor.generator.WbfcEditorGenerator;
 import com.wisea.cloud.wbfceditor.generator.entity.*;
 import org.mybatis.generator.api.IntrospectedTable;
 import org.mybatis.generator.api.dom.java.JavaElement;
+import org.mybatis.generator.config.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,8 +28,8 @@ public class GeneratorUtil {
     /**
      * table详细模板
      */
-    public static String TABLE_DETAIL_TEMPLETE = "<columnOverride column=\"{0}\" {1} />";
-    public static String TABLE_DETAIL_DATE_TEMPLETE = "<columnOverride column=\"{0}\" javaType=\"java.time.OffsetDateTime\"/>";
+    public static String TABLE_DETAIL_TEMPLETE = "            <columnOverride column=\"{0}\" {1} />";
+    public static String TABLE_DETAIL_DATE_TEMPLETE = "            <columnOverride column=\"{0}\" javaType=\"java.time.OffsetDateTime\"/>";
 
     private static WbfcConfig wbfcConfig = new WbfcConfig();
 
@@ -166,12 +170,12 @@ public class GeneratorUtil {
             // 在页面中自定义的列属性
             if (colList.size() > 0) {
                 String detailTemplete = getColumnOverrideTempletes(colList);
-                tableStrList.add(MybatisGeneratorTables.getTableDom(dTable.getTableName(), dTable.getEntityName(), detailTemplete, false, false, false, false));
+                tableStrList.add(GeneratorUtil.getTableDom(dTable, detailTemplete, false, false, false, false));
             } else {
                 // 默认的列属性
                 List<TableColumn> tableColumnList = GeneratorUtil.getWbfcEditorGenerator().getTableColumn(dTable.getTableName());
                 String detailTemplete = getDetailTemple(tableColumnList);
-                tableStrList.add(MybatisGeneratorTables.getTableDom(dTable.getTableName(), dTable.getEntityName(), detailTemplete, false, false, false, false));
+                tableStrList.add(GeneratorUtil.getTableDom(dTable, detailTemplete, false, false, false, false));
             }
         }
         wbfcConfig.setTablesList(tableStrList);
@@ -228,19 +232,19 @@ public class GeneratorUtil {
 
 
     public static String getColumnOverrideTempletes(List<WbfcDataColumn> colList) {
-        StringBuilder sf = new StringBuilder();
+        List<String> sf = Lists.newArrayList();
         for (WbfcDataColumn over : colList) {
             String prop = "";
             for (WbfcColunmOverrideProperty pro : over.getProperties()) {
                 prop += (pro.getName() + "=\"" + pro.getValue() + "\"");
             }
-            sf.append(MessageFormat.format(TABLE_DETAIL_TEMPLETE, over.getColName(), prop));
+            sf.add(MessageFormat.format(TABLE_DETAIL_TEMPLETE, over.getColName(), prop));
         }
-        return sf.toString();
+        return sf.stream().collect(Collectors.joining(System.lineSeparator()));
     }
 
     public static String getDetailTemple(List<TableColumn> tcList) {
-        StringBuilder sf = new StringBuilder();
+        List<String> sf = Lists.newArrayList();
         if (ConverterUtil.isNotEmpty(tcList)) {
             Iterator var2 = tcList.iterator();
 
@@ -248,11 +252,90 @@ public class GeneratorUtil {
                 TableColumn tc = (TableColumn) var2.next();
                 String dataType = tc.getTypeName().toLowerCase();
                 if (dataType.contains("date") || dataType.contains("datatime")) {
-                    sf.append(MessageFormat.format(TABLE_DETAIL_DATE_TEMPLETE, tc.getColumnName()));
+                    sf.add(MessageFormat.format(TABLE_DETAIL_DATE_TEMPLETE, tc.getColumnName()));
                 }
             }
         }
 
-        return sf.toString();
+        return sf.stream().collect(Collectors.joining(System.lineSeparator()));
+    }
+
+    public static IntrospectedTable getIntrospectedTable(Context context, String tableName) {
+        try {
+            Field f = context.getClass().getDeclaredField("introspectedTables");
+            f.setAccessible(true);
+            List<IntrospectedTable> introspectedTables = (List<IntrospectedTable>) f.get(context);
+            for (IntrospectedTable et : introspectedTables) {
+                if (tableName.equals(et.getTableConfiguration().getTableName())) {
+                    return et;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("expcetion in getIntrospectedTable {}", e);
+        }
+        return null;
+    }
+
+    /**
+     * 把column字符串转成Map
+     *
+     * @param columnStr
+     * @return
+     */
+    public static Map<String, String> convColumnsToMap(String columnStr) {
+        String columns = columnStr.trim().replace("=", ":");
+        Type type = new TypeToken<Map<String, String>>() {
+        }.getType();
+        // column结构 = {关联表.列名 = 主表.列名} 多个逗号分隔
+        Map<String, String> columnMap = ConverterUtil.gson.fromJson(columns, type);
+        return columnMap;
+    }
+
+    public static String getTableDom(WbfcDataTable dTable, String detail, boolean enableCountByExample, boolean enableSelectByExample, boolean enableUpdateByExample, boolean enableDeleteByExample) {
+        List<String> sf = Lists.newArrayList();
+        String tName = dTable.getTableName();
+        String eName = dTable.getEntityName();
+        sf.add(MessageFormat.format("        <table tableName=\"{0}\" domainObjectName=\"{1}\" enableCountByExample=\"{2}\" enableSelectByExample=\"{3}\" enableUpdateByExample=\"{4}\" enableDeleteByExample=\"{5}\">", tName, eName, enableCountByExample, enableSelectByExample, enableUpdateByExample, enableDeleteByExample));
+        StringBuilder tableInfoBu = new StringBuilder();
+        if (dTable.isRelation()) {
+            tableInfoBu.append("isRelation=\"true\"");
+            tableInfoBu.append(" ");
+        }
+        if (ConverterUtil.toBoolean(dTable.getBatchInsert())) {
+            tableInfoBu.append("batchInsert=\"true\"");
+            tableInfoBu.append(" ");
+        }
+        if (ConverterUtil.toBoolean(dTable.getBatchUpdate())) {
+            tableInfoBu.append("batchUpdate=\"true\"");
+            tableInfoBu.append(" ");
+        }
+        if (ConverterUtil.toBoolean(dTable.getBatchDelete())) {
+            tableInfoBu.append("batchDelete=\"true\"");
+            tableInfoBu.append(" ");
+        }
+        String tableAttr = tableInfoBu.toString();
+        if (ConverterUtil.isNotEmpty(tableAttr)) {
+            sf.add(MessageFormat.format("            <tableInfo {0}></tableInfo>", tableAttr));
+        }
+
+        if (ConverterUtil.isNotEmpty(detail)) {
+            sf.add(detail);
+        }
+        sf.add("        </table>");
+        return sf.stream().collect(Collectors.joining(System.lineSeparator()));
+    }
+
+    /**
+     * 名称驼峰转换
+     *
+     * @param name
+     * @return
+     */
+    public static String col2Pro(String name) {
+        if (null != name && !"".equals(name)) {
+            return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name.toLowerCase());
+        }
+        return "";
     }
 }

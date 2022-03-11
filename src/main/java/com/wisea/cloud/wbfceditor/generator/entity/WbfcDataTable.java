@@ -12,17 +12,23 @@ public class WbfcDataTable {
     @Check(test = "required", requiredMsg = "映射名不能为空")
     private String entityName;
 
-    @Check(test="required")
+    @Check(test = "required")
     private String simplePoVo = "false";
 
-    @Check(test="required")
+    @Check(test = "required")
     private String batchInsert = "false";
 
-    @Check(test="required")
+    @Check(test = "required")
     private String batchUpdate = "false";
 
-    @Check(test="required")
+    @Check(test = "required")
     private String batchDelete = "false";
+    @Check(test = "required")
+    /**
+     * 是否为关系表
+     */
+    private boolean isRelation = false;
+
 
     @Check(test = "logic", cascade = true, nullSkip = true)
     private List<WbfcDataColumn> columns = Lists.newArrayList();
@@ -30,6 +36,14 @@ public class WbfcDataTable {
     public WbfcDataTable(String tableName, String entityName) {
         this.tableName = tableName;
         this.entityName = entityName;
+    }
+
+    public boolean isRelation() {
+        return isRelation;
+    }
+
+    public void setRelation(boolean relation) {
+        isRelation = relation;
     }
 
     public String getTableName() {

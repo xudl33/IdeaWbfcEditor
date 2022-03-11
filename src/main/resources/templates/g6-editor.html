@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WbfcEditor - Java codes generator</title>
+    <meta name="content-type" content="text/plain; charset=UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <link rel="stylesheet" href="js/element-ui/lib/theme-chalk/index.css">
+    <link href="https://cdn.bootcss.com/jqueryui/1.12.1/jquery-ui.min.css" rel="stylesheet">
+    <!--    <link rel="stylesheet" href="css/darcula.css">-->
+
+    <script src="js/vue/dist/vue.js"></script>
+    <script src="js/element-ui/lib/index.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/1.12.1/jquery.min.js"></script>
+    <script src="https://cdn.bootcss.com/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://cdn.bootcss.com/jsPlumb/2.6.8/js/jsplumb.min.js"></script>
+    <style scoped>
+        .el-container {
+            height: 700px;
+        }
+
+        .drap-tables {
+        }
+
+        .el-aside {
+            border-right: 2px solid #5fade4;
+        }
+
+        .drap-area {
+            display: -webkit-box;
+            display: -moz-box;
+            height: 100%;
+        }
+
+        .drap-node {
+            cursor: pointer;
+        }
+
+        .drap-item {
+            width: 50%;
+            box-sizing: border-box;
+            -moz-box-sizing: border-box; /* Firefox */
+            -webkit-box-sizing: border-box; /* Safari */
+        }
+
+        .drap-item-main {
+            background-color: #5ec2e0;
+        }
+
+        .drap-item-sub {
+            background-color: #00ffff;
+        }
+
+        .drap-item-tb {
+            width: 50%;
+            position:relative;
+        }
+
+        .drap-item-title {
+            text-align: center;
+            font-size: 2rem;
+            border-bottom: 2px solid #6d6d6d;
+        }
+        #main-tables, #sub-tables{
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <el-container>
+        <el-aside width="20%">
+            <el-table :data="tableData">
+                <el-table-column
+                        class-name="drap-node"
+                        label="请选择表并拖动至右侧区域">
+                    <template slot-scope="scope">
+                        <span :index="scope.$index">{{scope.row.tableName}}</span>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-aside>
+        <el-main id="drap-tables">
+            <div class="drap-area">
+                <div class="drap-item drap-item-main">
+                    <div class="drap-item-title">主表区</div>
+                    <div id="main-tables">
+                        <div v-for="(item, index) in genInfo.mainTables" :key="item.id" :id="'dt_' + item.tableName" class="drap-item-tb">
+                            <el-table :data="item.columns" border>
+                                <el-table-column type="index" width="30%">
+                                </el-table-column>
+                                <el-table-column prop="name">
+                                    <template slot="header" slot-scope="scope">
+                                        {{item.tableName}}
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </div>
+                    </div>
+                </div>
+                <div class="drap-item drap-item-sub">
+                    <div class="drap-item-title">子表区</div>
+                    <div id="sub-tables">
+                        <el-table v-for="item in genInfo.subTables" :key="item.id" :data="item.columns" border
+                                  class="drap-item-tb">
+                            <el-table-column type="index" width="30%">
+                            </el-table-column>
+                            <el-table-column prop="name">
+                                <template slot="header" slot-scope="scope">
+                                    {{item.tableName}}
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
+                </div>
+            </div>
+        </el-main>
+    </el-container>
+</div>
+</body>
+<script>
+    var indexVue = new Vue({
+        el: '#app',
+        data: function () {
+            return {
+                tableData: [{
+                    tableName: 'sys_role'
+                }, {
+                    tableName: 'sys_user_role'
+                }, {
+                    tableName: 'sys_user'
+                }, {
+                    tableName: 'sys_dict'
+                }, {
+                    tableName: 'sys_area'
+                }],
+                genInfo: {
+                    mainTables: [],
+                    subTables: []
+                }
+            }
+        },
+        watch: {},
+        computed: {},
+        methods: {
+            // 放入拖动节点
+            dropNode(event, ui) {
+                const position = ui.position;
+                position.left -= $('.el-aside').outerWidth();
+                position.id = this.getUUID();
+                position.generateId = this.getUUID;
+
+                const drapContext = ui.draggable.context;
+                const drapIndex = $(ui.draggable.context).find("span").attr("index");
+                const node = this.getDrapNode(this.tableData[drapIndex]);
+                // 主表
+                if ($(event.target).hasClass("drap-item-main")) {
+                    this.genInfo.mainTables.push(node);
+                    this.$set(this.genInfo, 'mainTables', this.genInfo.mainTables);
+                } else {
+                    // 子表
+                    this.genInfo.subTables.push(node);
+                    this.$set(this.genInfo, 'subTables', this.genInfo.subTables);
+                }
+                this.addDraggable('dt_' + node.tableName);
+
+                // var html = renderHtml(template, position)
+                //
+                // $(areaId).append(html)
+
+                //initSetNode(template, position.id)
+            },
+            addDraggable(id) {
+                this.$nextTick(() => {
+                    // 让元素可拖动
+                    jsPlumb.draggable($('#' + id), {
+                        containment: '#main-tables'
+                    })
+                });
+            },
+            getDrapNode(tableData) {
+                const node = Object.assign({}, tableData);
+                node.columns = [{"name": "id"}, {"name": "name"}, {"name": "create_by"}, {"name": "create_date"}, {"name": "update_by"}, {"name": "update_date"}];
+                return node;
+            },
+            getColumns(tableName) {
+
+            },
+            getUUID() {
+                var s = [];
+                var hexDigits = "0123456789abcdefghijklmnopqrstuvwxyz";
+                for (var i = 0; i < 36; i++) {
+                    s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
+                }
+                s[14] = "4"; // bits 12-15 of the time_hi_and_version field to 0010
+                s[19] = hexDigits.substr((s[19] & 0x3) | 0x8, 1); // bits 6-7 of the
+                // clock_seq_hi_and_reserved
+                // to 01
+                s[8] = s[13] = s[18] = s[23] = "";
+
+                return s.join("");
+            },
+            init() {
+                var _this = this;
+                this.$nextTick(() => {
+                    jsPlumb.setContainer('drap-tables');
+                    $('.drap-node').draggable({
+                        appendTo: "body",
+                        zIndex: 10000,
+                        helper: 'clone',
+                        cursor: 'move'
+                    })
+                    $(".drap-item").droppable({
+                        accept: ".drap-node",
+                        drop: function (event, ui) {
+                            _this.dropNode(event, ui);
+                        }
+                    })
+                    jsPlumb.ready(function () {
+                        var common = {
+                            endpoint: 'Rectangle',
+                            connector: ['Straight'],
+                            paintStyle: {stroke: 'lightgray', strokeWidth: 3},
+                            endpointStyle: {fill: 'lightgray', outlineStroke: 'darkgray', outlineWidth: 2},
+                            overlays: [['Arrow', {width: 12, length: 12, location: 0.5}]],
+                            isSource: true,
+                            isTarget: true,
+                            ConnectionsDetachable: false // 不允许拖动取消链接
+                        }
+                    })
+                });
+            },
+        },
+        created: function () {
+            //console.log(G6.Global.version);
+
+        },
+        mounted: function () {
+            this.init();
+        }
+    });
+</script>
+</html>

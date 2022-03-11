@@ -11,7 +11,6 @@ import org.mybatis.generator.codegen.mybatis3.MyBatis3FormattingUtilities;
 import org.mybatis.generator.codegen.mybatis3.xmlmapper.elements.AbstractXmlElementGenerator;
 
 import java.util.List;
-import java.util.Optional;
 
 public class WbfcBatchUpdateElementGenerator extends AbstractXmlElementGenerator {
 
@@ -56,7 +55,7 @@ public class WbfcBatchUpdateElementGenerator extends AbstractXmlElementGenerator
             IntrospectedColumn col = columnList.get(i);
             String colName = MyBatis3FormattingUtilities.getEscapedColumnName(col);
             // 主键或默认更新属性跳过
-            if (introspectedTable.getPrimaryKeyColumns().contains(col) || colName.equals("update_by") || colName.equals("update_date") || colName.equals("create_by") || colName.equals("create_date") || colName.equals("del_flag")) {
+            if (introspectedTable.getPrimaryKeyColumns().contains(col) || colName.equals("create_by") || colName.equals("create_date") || colName.equals("del_flag")) {
                 continue;
             }
             sTemp.append(colName);
@@ -75,20 +74,20 @@ public class WbfcBatchUpdateElementGenerator extends AbstractXmlElementGenerator
             sTemp.setLength(0);
             sTemp.append(tempSb);
         }
-        Optional<IntrospectedColumn> updateByColumn = introspectedTable.getColumn("update_by");
-        if (updateByColumn.isPresent()) {
-            sTemp.append(',');
-            sTemp.append(MyBatis3FormattingUtilities.getAliasedEscapedColumnName(updateByColumn.get()));
-            sTemp.append(" = ");
-            sTemp.append(MyBatis3FormattingUtilities.getParameterClause(updateByColumn.get(), "item."));
-        }
-        Optional<IntrospectedColumn> updateDateColumn = introspectedTable.getColumn("update_date");
-        if (updateDateColumn.isPresent()) {
-            sTemp.append(',');
-            sTemp.append(MyBatis3FormattingUtilities.getAliasedEscapedColumnName(updateDateColumn.get()));
-            sTemp.append(" = ");
-            sTemp.append(MyBatis3FormattingUtilities.getParameterClause(updateDateColumn.get(), "item."));
-        }
+//        Optional<IntrospectedColumn> updateByColumn = introspectedTable.getColumn("update_by");
+//        if (updateByColumn.isPresent()) {
+//            sTemp.append(',');
+//            sTemp.append(MyBatis3FormattingUtilities.getAliasedEscapedColumnName(updateByColumn.get()));
+//            sTemp.append(" = ");
+//            sTemp.append(MyBatis3FormattingUtilities.getParameterClause(updateByColumn.get(), "item."));
+//        }
+//        Optional<IntrospectedColumn> updateDateColumn = introspectedTable.getColumn("update_date");
+//        if (updateDateColumn.isPresent()) {
+//            sTemp.append(',');
+//            sTemp.append(MyBatis3FormattingUtilities.getAliasedEscapedColumnName(updateDateColumn.get()));
+//            sTemp.append(" = ");
+//            sTemp.append(MyBatis3FormattingUtilities.getParameterClause(updateDateColumn.get(), "item."));
+//        }
         answer.addElement(new TextElement(sTemp.toString()));
         sTemp.setLength(0);
         OutputUtilities.xmlIndent(sTemp, 2);

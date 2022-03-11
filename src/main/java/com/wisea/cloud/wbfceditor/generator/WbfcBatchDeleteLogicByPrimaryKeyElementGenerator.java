@@ -1,5 +1,6 @@
 package com.wisea.cloud.wbfceditor.generator;
 
+import com.wisea.cloud.common.util.ConverterUtil;
 import org.mybatis.generator.api.IntrospectedColumn;
 import org.mybatis.generator.api.dom.OutputUtilities;
 import org.mybatis.generator.api.dom.xml.Attribute;
@@ -12,8 +13,18 @@ import java.util.Optional;
 
 public class WbfcBatchDeleteLogicByPrimaryKeyElementGenerator extends AbstractXmlElementGenerator {
 
+    private String sqlId;
+
     public WbfcBatchDeleteLogicByPrimaryKeyElementGenerator() {
         super();
+    }
+
+    public String getSqlId() {
+        return sqlId;
+    }
+
+    public void setSqlId(String sqlId) {
+        this.sqlId = sqlId;
     }
 
     @Override
@@ -25,7 +36,7 @@ public class WbfcBatchDeleteLogicByPrimaryKeyElementGenerator extends AbstractXm
         }
         XmlElement answer = new XmlElement("update"); //$NON-NLS-1$
 
-        answer.addAttribute(new Attribute("id", "batchDelete")); //$NON-NLS-1$
+        answer.addAttribute(new Attribute("id", ConverterUtil.toString(sqlId, "batchDelete"))); //$NON-NLS-1$
 
         answer.addAttribute(new Attribute("parameterType", "java.util.List"));
 
@@ -56,7 +67,7 @@ public class WbfcBatchDeleteLogicByPrimaryKeyElementGenerator extends AbstractXm
             sTemp.append(',');
             sTemp.append(MyBatis3FormattingUtilities.getAliasedEscapedColumnName(updateDateColumn.get()));
             sTemp.append(" = ");
-            sTemp.append(MyBatis3FormattingUtilities.getParameterClause(updateDateColumn.get(),"item."));
+            sTemp.append(MyBatis3FormattingUtilities.getParameterClause(updateDateColumn.get(), "item."));
         }
         answer.addElement(new TextElement(sTemp.toString()));
         sTemp.setLength(0);

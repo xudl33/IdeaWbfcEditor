@@ -100,6 +100,9 @@ public class WbfcConfig implements Serializable {
     private String simplePoVo = "false";
 
     @Check(test = "required")
+    private String updateStrategy = "DELETE_INSERT";
+
+    @Check(test = "required")
     private String charset = "UTF-8";
 
     private Map<String, String> dbUrlPropertyMap = Maps.newLinkedHashMap();
@@ -353,6 +356,14 @@ public class WbfcConfig implements Serializable {
 
     public void setDbUrlPropertyMap(Map<String, String> dbUrlPropertyMap) {
         this.dbUrlPropertyMap = dbUrlPropertyMap;
+    }
+
+    public String getUpdateStrategy() {
+        return updateStrategy;
+    }
+
+    public void setUpdateStrategy(String updateStrategy) {
+        this.updateStrategy = updateStrategy;
     }
 
     public WbfcDataTable getDataTable(String tableName) {

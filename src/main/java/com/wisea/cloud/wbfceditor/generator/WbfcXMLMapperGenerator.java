@@ -1,15 +1,17 @@
 package com.wisea.cloud.wbfceditor.generator;
 
 import com.wisea.cloud.common.util.ConverterUtil;
-import com.wisea.cloud.wbfceditor.generator.WbfcDeleteLogicByPrimaryKeyElementGenerator;
-import com.wisea.cloud.wbfceditor.generator.WbfcFindListElementGenerator;
-import com.wisea.cloud.wbfceditor.generator.WbfcFindPageElementGenerator;
+import com.wisea.cloud.wbfceditor.generator.config.JoinTable;
+import com.wisea.cloud.wbfceditor.generator.config.WbfcTableConfiguration;
+import com.wisea.cloud.wbfceditor.generator.config.WbfcTableInfo;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcConfig;
 import com.wisea.cloud.wbfceditor.generator.entity.WbfcDataTable;
 import com.wisea.cloud.wbfceditor.generator.util.GeneratorUtil;
 import org.mybatis.generator.api.dom.xml.XmlElement;
 import org.mybatis.generator.codegen.mybatis3.xmlmapper.XMLMapperGenerator;
 import org.mybatis.generator.codegen.mybatis3.xmlmapper.elements.AbstractXmlElementGenerator;
+
+import java.util.List;
 
 public class WbfcXMLMapperGenerator extends XMLMapperGenerator {
     private boolean hasPoVo = true;
@@ -56,12 +58,16 @@ public class WbfcXMLMapperGenerator extends XMLMapperGenerator {
     @Override
     protected XmlElement getSqlMapElement() {
         WbfcConfig wbfcConfig = GeneratorUtil.getWbfcConfig();
-        String tableName = introspectedTable.getTableConfiguration().getTableName();
+        WbfcTableConfiguration tc = (WbfcTableConfiguration) introspectedTable.getTableConfiguration();
+        List<JoinTable> oneToManyList = tc.getJoinTableList();
+        String tableName = tc.getTableName();
         WbfcDataTable datatable = wbfcConfig.getDataTable(tableName);
+        WbfcTableInfo tableInfo = tc.getTableInfo();
         if (null != datatable) {
-            this.batchInsert = ConverterUtil.toBoolean(datatable.getBatchInsert());
-            this.batchUpdate = ConverterUtil.toBoolean(datatable.getBatchUpdate());
-            this.batchDelete = ConverterUtil.toBoolean(datatable.getBatchDelete());
+            // UI选项优先级<XML
+            this.batchInsert = getBooleanAttr(datatable.getBatchInsert(), tableInfo.getBatchInsert());
+            this.batchUpdate = getBooleanAttr(datatable.getBatchUpdate(), tableInfo.getBatchUpdate());
+            this.batchDelete = getBooleanAttr(datatable.getBatchDelete(), tableInfo.getBatchDelete());
         }
         XmlElement answer = super.getSqlMapElement();
         // 有PoVo
@@ -84,7 +90,31 @@ public class WbfcXMLMapperGenerator extends XMLMapperGenerator {
             // 增加deleteLogicByPrimaryKey方法
             addDeleteLogicByPrimaryKey(answer);
         }
+        if (ConverterUtil.isNotEmpty(oneToManyList)) {
+            addOneToManyElements(answer);
+        }
         return answer;
+    }
+
+    /**
+     * 按数组顺序(优先级)返回布尔值
+     *
+     * @param props
+     * @return
+     */
+    private boolean getBooleanAttr(Object... props) {
+        boolean needSet = false;
+        for (Object obj : props) {
+            if (ConverterUtil.isNotEmpty(obj)) {
+                needSet = ConverterUtil.toBoolean(obj);
+            }
+        }
+        return needSet;
+    }
+
+    protected void addOneToManyElements(XmlElement parentElement) {
+        AbstractXmlElementGenerator elementGenerator = new WbfcJoinTableElementGenerator(this);
+        initializeAndExecuteGenerator(elementGenerator, parentElement);
     }
 
     protected void addFindPageElement(XmlElement parentElement) {

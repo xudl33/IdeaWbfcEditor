@@ -27,6 +27,10 @@
             display: inline-block;
         }
 
+        .has-tools .el-form-item .el-select{
+            width: 150%;
+        }
+
         .has-tools .el-form-item:first-child {
             width: 10%;
         }
@@ -160,6 +164,12 @@
                     </el-form-item>
                     <el-form-item label="PO&VO" label-width="50%">
                         <el-switch v-model="form.hasPoVo" active-value="true" inactive-value="false"></el-switch>
+                    </el-form-item>
+                    <el-form-item label="更新策略" label-width="50%">
+                        <el-select v-model="form.updateStrategy" placeholder="请选择">
+                            <el-option label="先删后插" value="DELETE_INSERT"></el-option>
+                            <el-option label="只更新" value="ONLY_UPDATE"></el-option>
+                        </el-select>
                     </el-form-item>
                 </div>
                 <div>
@@ -344,6 +354,18 @@
             </el-form-item>
             <el-form-item label="映射名" prop="entityName">
                 <el-input v-model="updateForm.entityName" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item>
+                <div slot="label">
+                    <span>是否为关系表</span>
+                    <el-tooltip placement="bottom" effect="light">
+                        <div slot="content">
+                            <span>开启该选项后，不生成Controller</span>
+                        </div>
+                        <el-button type="text" icon="el-icon-question" class="quick-tooltip"></el-button>
+                    </el-tooltip>
+                </div>
+                <el-switch v-model="updateForm.isRelation" active-value="true" inactive-value="false"></el-switch>
             </el-form-item>
             <el-form-item v-if="form.simplePoVo == 'false'">
                 <div slot="label">
