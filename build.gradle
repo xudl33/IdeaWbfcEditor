@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'com.wisea'
-version '1.0.5'
+version '1.0.6'
 
 repositories {
     mavenLocal()
@@ -44,6 +44,7 @@ patchPluginXml {
     changeNotes """
       更新记录<br>
       <ul>
+        <li>20211116-删除旧的varchar长度的兼容性mixLength生成规则，改为length规则</li>
         <li>20201126-增加了外键或主键的LONG型,SwaggerUI文档dataType=String的功能;增加一对一、一对多生成(手动配置);增加纯关系表生成不包括Conroller的选项;</li>
         <li>20200826-增加了输出文件自选编码格式的功能;修正了自定义映射名不正确的问题;修正Settings找不到默认工程目录的问题；修正MAC OSX无法读取配置路径的问题;</li>
         <li>20200812-增加配置路径表单重置功能;优化视觉效果、表单按钮美化；调整图标位置,增加Tools菜单按钮;</li>

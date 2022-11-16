@@ -2630,10 +2630,11 @@ public class WbfcModelGenerator extends PluginAdapter {
                         int colLength = introspectedColumn.getLength();
                         if (colLength > 0 && !isPrimaryKey) {
                             if (colJavaType.equals(String.class.getName())) {
-                                // string判断中英文混合的最大长度
                                 testList.add("\"maxLength\"");
-                                attrList.add("mixLength = " + colLength);
-                                swaggerAllowList.add("mixLength:(," + colLength + "]");
+                                // string判断中英文混合的最大长度
+                                // 新版的mysql和mariaDB varchar已经不区分中英文了 不用再判断混合长度了
+                                attrList.add("length = " + colLength);
+                                swaggerAllowList.add("length:(," + colLength + "]");
                             } else if (colJavaType.equals(Long.class.getName()) || colJavaType.equals(Integer.class.getName())) {
                                 // 整数字判断最大长度
                                 testList.add("\"maxLength\"");
